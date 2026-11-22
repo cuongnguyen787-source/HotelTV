@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, initial-scale=1.0" />
+  <title>Hotel TV Welcome</title>
+  <style>
+    :root {
+      --bg-top: #18100b;
+      --bg-bottom: #261810;
+      --card-bg: rgba(42, 27, 18, 0.72);
+      --card-border: rgba(255, 235, 210, 0.22);
+      --focus-border: #f5b971;
+      --focus-bg: rgba(74, 47, 30, 0.92);
+      --text-main: #f7efe6;
+      --text-muted: #cbbba8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      outline: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Roboto, "Noto Sans JP", "Noto Sans KR", Arial, sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at 20% 25%, #2c1c12 0%, var(--bg-top) 45%, var(--bg-bottom) 100%);
+    }
+
+    .screen {
+      width: 100vw;
+      height: 100vh;
+      padding: 48px 68px 54px 68px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 36px;
+    }
+
+    .welcome-box {
+      max-width: 66%;
+    }
+
+    .welcome-title {
+      font-size: clamp(50px, 5.8vw, 96px);
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      word-break: break-word;
+    }
+
+    .welcome-date {
+      font-size: clamp(20px, 1.9vw, 30px);
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .meta-box {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .clock-line {
+      font-size: clamp(19px, 1.7vw, 28px);
+      color: var(--text-muted);
+    }
+
+    .clock-line .time-strong {
+      color: var(--text-main);
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .weather-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+    }
+
+    .weather-icon {
+      width: 50px;
+      height: 50px;
+      stroke: var(--text-main);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .weather-temp-main {
+      font-size: clamp(34px, 3.3vw, 52px);
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .weather-temp-sub {
+      font-size: clamp(16px, 1.4vw, 23px);
+      color: var(--text-muted);
+      text-align: left;
+      line-height: 1.25;
+    }
+
+    .lang-switch {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: clamp(17px, 1.45vw, 22px);
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    .lang-switch .active-lang {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .lang-switch:focus,
+    .lang-switch.tv-focused {
+      border-color: var(--focus-border);
+      background: var(--focus-bg);
+      color: var(--text-main);
+      transform: scale(1.03);
+    }
+
+    /* Hàng dưới: 4 nút chức năng + 1 ô chạy quảng cáo chung rộng hơn */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 1.55fr;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .menu-card {
+      height: clamp(210px, 27vh, 290px);
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .menu-card svg {
+      width: clamp(48px, 4.5vw, 68px);
+      height: clamp(48px, 4.5vw, 68px);
+      stroke: var(--text-main);
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .menu-label {
+      font-size: clamp(16px, 1.4vw, 22px);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-main);
+      text-align: center;
+    }
+
+    /* Ô thứ 5: Khung chạy clip quảng bá chung */
+    .promo-card {
+      position: relative;
+      height: clamp(210px, 27vh, 290px);
+      background: #120c08;
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      padding: 0;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .promo-card video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .promo-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(64, 41, 26, 0.9), rgba(26, 17, 11, 0.95));
+      color: var(--text-main);
+      text-align: center;
+    }
+
+    .promo-badge {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(15, 10, 7, 0.72);
+      backdrop-filter: blur(4px);
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .promo-badge span:last-child {
+      font-size: 12px;
+      color: var(--focus-border);
+      white-space: nowrap;
+    }
+
+    .menu-card:focus,
+    .menu-card.tv-focused,
+    .promo-card:focus,
+    .promo-card.tv-focused {
+      border-color: var(--focus-border);
+      background: var(--focus-bg);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Chế độ xem clip quảng cáo toàn màn hình khi khách bấm OK vào ô quảng cáo */
+    .fullscreen-promo {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 999;
+      display: none;
+    }
+
+    .fullscreen-promo.active {
+      display: block;
+    }
+
+    .fullscreen-promo video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .fullscreen-hint {
+      position: absolute;
+      top: 24px;
+      right: 32px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 14, 10, 0.94);
+      border: 1px solid var(--focus-border);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 17px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="top-bar">
+      <div class="welcome-box">
+        <h1 id="welcomeHeading" class="welcome-title">Welcome,<br>Guest</h1>
+        <div id="leftDateText" class="welcome-date">Tuesday, April 23</div>
+      </div>
+
+      <div class="meta-box">
+        <div class="clock-line">
+          <span id="rightDateText">Tuesday, April 23</span>
+          <span id="clockTime" class="time-strong">2:17 PM</span>
+        </div>
+
+        <div class="weather-row">
+          <svg class="weather-icon" viewBox="0 0 64 64">
+            <circle cx="24" cy="24" r="9"></circle>
+            <path d="M24 6v5M24 37v5M6 24h5M37 24h5M11.3 11.3l3.5 3.5M33.2 33.2l3.5 3.5M36.7 11.3l-3.5 3.5M14.8 33.2l-3.5 3.5"></path>
+            <path d="M24 44h22a9 9 0 0 0 1.4-17.9A12 12 0 0 0 24.4 22"></path>
+          </svg>
+          <div id="weatherMain" class="weather-temp-main">22°C</div>
+          <div class="weather-temp-sub">
+            <div id="weatherHigh">22°C</div>
+            <div id="weatherLow">(18)</div>
+          </div>
+        </div>
+
+        <button id="langBtn" class="lang-switch tv-nav" data-action="lang">
+          <span id="langEn" class="active-lang">English</span>
+          <span>/</span>
+          <span id="langJa">日本語</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <button class="menu-card tv-nav" data-action="tv">
+        <svg viewBox="0 0 64 64">
+          <rect x="10" y="18" width="44" height="32" rx="4"></rect>
+          <path d="M22 8l10 10 10-10"></path>
+        </svg>
+        <span id="lblTv" class="menu-label">TV CHANNELS</span>
+      </button>
+
+      <button class="menu-card tv-nav" data-action="movies">
+        <svg viewBox="0 0 64 64">
+          <rect x="10" y="18" width="44" height="32" rx="4"></rect>
+          <path d="M10 26h44"></path>
+          <path d="M14 18l6-8h8l-6 8M28 18l6-8h8l-6 8M42 18l6-8h4l-6 8"></path>
+        </svg>
+        <span id="lblMovies" class="menu-label">MOVIES</span>
+      </button>
+
+      <button class="menu-card tv-nav" data-action="services">
+        <svg viewBox="0 0 64 64">
+          <path d="M14 44a18 18 0 0 1 36 0Z"></path>
+          <path d="M32 22v4M26 22h12M10 48h44"></path>
+        </svg>
+        <span id="lblServices" class="menu-label">HOTEL SERVICES</span>
+      </button>
+
+      <button class="menu-card tv-nav" data-action="roomservice">
+        <svg viewBox="0 0 64 64">
+          <path d="M18 14v14a6 6 0 0 0 12 0V14M24 14v36"></path>
+          <path d="M42 14v36M42 14c5 0 8 5 8 13v5h-8"></path>
+        </svg>
+        <span id="lblRoomService" class="menu-label">ROOM SERVICE</span>
+      </button>
+
+      <!-- Ô thứ 5: Chạy clip quảng bá chung -->
+      <button id="promoCard" class="promo-card tv-nav" data-action="promo">
+        <video id="miniPromoVideo" autoplay muted playsinline></video>
+        <div id="promoFallback" class="promo-fallback">
+          <strong style="font-size: 20px;">HOTEL HIGHLIGHTS</strong>
+          <span style="font-size: 14px; color: var(--text-muted);">Chưa có video quảng cáo chung</span>
+        </div>
+        <div class="promo-badge">
+          <span id="promoTitle">Promotions</span>
+          <span id="promoHint">OK: Toàn màn hình</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Lớp phủ phát clip quảng cáo toàn màn hình -->
+  <div id="fullscreenPromo" class="fullscreen-promo">
+    <video id="fullPromoVideo" playsinline></video>
+    <div id="fullscreenHint" class="fullscreen-hint">Bấm phím bất kỳ để quay lại</div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // THAY ĐỊA CHỈ CLOUDFLARE WORKER CỦA BẠN VÀO ĐÂY
+    const API_BASE = "https://ten-worker-cua-ban.workers.dev";
+
+    const params = new URLSearchParams(window.location.search);
+    const roomCode = (params.get("room") || "101").trim();
+    const CACHE_KEY = `hotel_tv_state_${roomCode}_v1`;
+
+    const I18N = {
+      en: {
+        welcomePrefix: "Welcome,",
+        defaultGuest: "Guest",
+        locale: "en-US",
+        tv: "TV CHANNELS",
+        movies: "MOVIES",
+        services: "HOTEL SERVICES",
+        roomService: "ROOM SERVICE",
+        promoHint: "OK: Fullscreen",
+        fsHint: "Press any key to exit"
+      },
+      ja: {
+        welcomePrefix: "ようこそ、",
+        defaultGuest: "お客様",
+        locale: "ja-JP",
+        tv: "テレビチャンネル",
+        movies: "映画・VOD",
+        services: "ホテル案内",
+        roomService: "ルームサービス",
+        promoHint: "OK: 全画面表示",
+        fsHint: "いずれかのキーで戻る"
+      }
+    };
+
+    let currentLang = "en";
+    let manualLangOverride = false;
+    let activePromos = [];
+    let currentPromoIdx = 0;
+    let lastPromoSignature = "";
+    let isFullscreenPromo = false;
+
+    const miniVideo = document.getElementById("miniPromoVideo");
+    const fullVideo = document.getElementById("fullPromoVideo");
+    const promoFallback = document.getElementById("promoFallback");
+    const promoTitleEl = document.getElementById("promoTitle");
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const loc = I18N[currentLang]?.locale || "en-US";
+      const dateStr = now.toLocaleDateString(loc, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      });
+      const timeStr = now.toLocaleTimeString(loc, {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+
+      document.getElementById("leftDateText").textContent = dateStr;
+      document.getElementById("rightDateText").textContent = dateStr;
+      document.getElementById("clockTime").textContent = timeStr;
+    }
+
+    // Phát nối tiếp danh sách clip quảng cáo trong ô thứ 5
+    function playMiniPromoAt(index) {
+      if (!activePromos.length) {
+        miniVideo.style.display = "none";
+        promoFallback.style.display = "flex";
+        promoTitleEl.textContent = "Promotions";
+        return;
+      }
+
+      currentPromoIdx = index % activePromos.length;
+      const item = activePromos[currentPromoIdx];
+      promoFallback.style.display = "none";
+      miniVideo.style.display = "block";
+      promoTitleEl.textContent = item.title || `Promo #${currentPromoIdx + 1}`;
+
+      if (miniVideo.src !== item.url) {
+        miniVideo.src = item.url;
+      }
+      miniVideo.play().catch(() => {});
+    }
+
+    miniVideo.addEventListener("ended", () => {
+      playMiniPromoAt(currentPromoIdx + 1);
+    });
+
+    miniVideo.addEventListener("error", () => {
+      if (activePromos.length > 1) {
+        setTimeout(() => playMiniPromoAt(currentPromoIdx + 1), 1500);
+      }
+    });
+
+    function openFullscreenPromo() {
+      if (!activePromos.length) {
+        showToast("Chưa có clip quảng cáo để phát toàn màn hình.");
+        return;
+      }
+      isFullscreenPromo = true;
+      miniVideo.pause();
+
+      const item = activePromos[currentPromoIdx % activePromos.length];
+      fullVideo.src = item.url;
+      fullVideo.currentTime = miniVideo.currentTime || 0;
+      fullVideo.muted = false;
+      document.getElementById("fullscreenPromo").classList.add("active");
+      fullVideo.play().catch(() => {
+        fullVideo.muted = true;
+        fullVideo.play().catch(() => {});
+      });
+    }
+
+    function closeFullscreenPromo() {
+      if (!isFullscreenPromo) return;
+      isFullscreenPromo = false;
+      fullVideo.pause();
+      fullVideo.removeAttribute("src");
+      fullVideo.load();
+      document.getElementById("fullscreenPromo").classList.remove("active");
+      miniVideo.play().catch(() => {});
+    }
+
+    fullVideo.addEventListener("ended", () => {
+      if (!activePromos.length) return;
+      currentPromoIdx = (currentPromoIdx + 1) % activePromos.length;
+      const item = activePromos[currentPromoIdx];
+      fullVideo.src = item.url;
+      fullVideo.play().catch(() => {});
+    });
+
+    function applyStateToUI(state) {
+      const prevFocus = focusIndex;
+      const record = state.room || {
+        room: roomCode,
+        guestName: "",
+        status: "vacant",
+        lang: "en",
+        temp: 22,
+        tempLow: 18
+      };
+
+      if (!manualLangOverride && record.lang && I18N[record.lang]) {
+        currentLang = record.lang;
+      }
+
+      const dict = I18N[currentLang] || I18N.en;
+      const guestDisplay =
+        record.status === "vacant" || !record.guestName || !record.guestName.trim()
+          ? dict.defaultGuest
+          : record.guestName.trim();
+
+      document.getElementById("welcomeHeading").innerHTML =
+        `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
+
+      document.getElementById("lblTv").textContent = dict.tv;
+      document.getElementById("lblMovies").textContent = dict.movies;
+      document.getElementById("lblServices").textContent = dict.services;
+      document.getElementById("lblRoomService").textContent = dict.roomService;
+      document.getElementById("promoHint").textContent = dict.promoHint;
+      document.getElementById("fullscreenHint").textContent = dict.fsHint;
+
+      document.getElementById("langEn").classList.toggle("active-lang", currentLang === "en");
+      document.getElementById("langJa").classList.toggle("active-lang", currentLang === "ja");
+
+      const tempMain = record.temp ?? 22;
+      const tempLow = record.tempLow ?? 18;
+      document.getElementById("weatherMain").textContent = `${tempMain}°C`;
+      document.getElementById("weatherHigh").textContent = `${tempMain}°C`;
+      document.getElementById("weatherLow").textContent = `(${tempLow})`;
+
+      // Cập nhật danh sách clip quảng cáo nếu có thay đổi
+      const list = Array.isArray(state.promos)
+        ? state.promos.filter(p => p && p.active !== false && p.url && p.url.trim())
+        : [];
+      const sig = JSON.stringify(list.map(p => p.url));
+      if (sig !== lastPromoSignature) {
+        lastPromoSignature = sig;
+        activePromos = list;
+        playMiniPromoAt(0);
+      }
+
+      updateClock();
+      setFocus(prevFocus);
+    }
+
+    async function syncFromCloud() {
+      // Hiển thị từ cache trước để bật TV là lên hình ngay
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) applyStateToUI(JSON.parse(cached));
+      } catch (e) {}
+
+      try {
+        const res = await fetch(`${API_BASE}/api/state?room=${encodeURIComponent(roomCode)}`, {
+          cache: "no-store"
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          applyStateToUI(data);
+        }
+      } catch (e) {
+        // Giữ cache cũ nếu rớt mạng tạm thời
+      }
+    }
+
+    function triggerAction(action) {
+      if (action === "lang") {
+        manualLangOverride = true;
+        currentLang = currentLang === "en" ? "ja" : "en";
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+        applyStateToUI(cached);
+        return;
+      }
+
+      if (action === "promo") {
+        openFullscreenPromo();
+        return;
+      }
+
+      // Cầu nối gọi app Android trên Box ATV
+      if (window.AndroidBridge && typeof window.AndroidBridge.onMenuSelect === "function") {
+        window.AndroidBridge.onMenuSelect(action, roomCode);
+        return;
+      }
+
+      const names = {
+        tv: "TV CHANNELS (Mở VTVprime / TiviMate)",
+        movies: "MOVIES (Mở kho phim VOD)",
+        services: "HOTEL SERVICES (Tiện ích khách sạn)",
+        roomservice: "ROOM SERVICE (Đặt dịch vụ phòng)"
+      };
+      showToast(`[Phòng ${roomCode}] → ${names[action] || action}`);
+    }
+
+    // Điều hướng D-pad / Bàn phím
+    const navItems = Array.from(document.querySelectorAll(".tv-nav"));
+    let focusIndex = 1; // Mặc định focus TV CHANNELS
+
+    function setFocus(idx) {
+      focusIndex = (idx + navItems.length) % navItems.length;
+      navItems.forEach((el, i) => {
+        el.classList.toggle("tv-focused", i === focusIndex);
+      });
+      navItems[focusIndex].focus({ preventScroll: true });
+    }
+
+    navItems.forEach((el, idx) => {
+      el.addEventListener("click", () => {
+        setFocus(idx);
+        triggerAction(el.dataset.action);
+      });
+      el.addEventListener("mouseenter", () => setFocus(idx));
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (isFullscreenPromo) {
+        e.preventDefault();
+        closeFullscreenPromo();
+        return;
+      }
+
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter"].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      if (e.key === "ArrowRight") {
+        setFocus(focusIndex + 1);
+      } else if (e.key === "ArrowLeft") {
+        setFocus(focusIndex - 1);
+      } else if (e.key === "ArrowDown") {
+        if (focusIndex === 0) setFocus(1);
+      } else if (e.key === "ArrowUp") {
+        if (focusIndex >= 1) setFocus(0);
+      } else if (e.key === "Enter") {
+        triggerAction(navItems[focusIndex].dataset.action);
+      }
+    });
+
+    document.getElementById("fullscreenPromo").addEventListener("click", closeFullscreenPromo);
+
+    updateClock();
+    setFocus(1);
+    syncFromCloud();
+    setInterval(updateClock, 15000);
+    setInterval(syncFromCloud, 20000);
+  </script>
+</body>
+</html>
