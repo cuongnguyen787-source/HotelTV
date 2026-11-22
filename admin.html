@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản Trị TV Khách Sạn (50 Phòng & Quảng Cáo)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      padding: 22px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .top-card {
+      background: #fff;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .top-card h1 { font-size: 21px; }
+    .top-card p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .pin-box { display: flex; align-items: center; gap: 8px; }
+    input[type="text"], input[type="password"], select {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+    }
+    button {
+      height: 38px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.92; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #1f2937; }
+    .btn-warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-sm { height: 32px; padding: 0 10px; font-size: 13px; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 0 18px;
+      height: 40px;
+    }
+    .tab-btn.active {
+      background: #111827;
+      color: #fff;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .toolbar {
+      background: #fff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+    .toolbar-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 780px; }
+    th, td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #f9fafb;
+      font-size: 12px;
+      font-weight: 700;
+      color: #4b5563;
+      text-transform: uppercase;
+    }
+    .room-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #1e40af;
+    }
+    .status-tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-occupied { background: #dcfce7; color: #166534; }
+    .status-vacant { background: #f3f4f6; color: #4b5563; }
+    .full-input { width: 100%; }
+    .actions-cell { display: flex; gap: 6px; align-items: center; }
+
+    .notice {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #111827;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .notice.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-card">
+      <div>
+        <h1>Hệ Thống Quản Lý TV Khách Sạn (50 Phòng)</h1>
+        <p>Đồng bộ trực tiếp lên Cloudflare Worker — Áp dụng tức thì cho 50 Box ATV.</p>
+      </div>
+      <div class="pin-box">
+        <label for="pinInput" style="font-size: 13px; font-weight: 600;">PIN Lễ Tân:</label>
+        <input id="pinInput" type="password" value="1234" style="width: 110px;" />
+        <button id="reloadCloudBtn" class="btn-secondary">Tải lại dữ liệu</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="roomsPanel">1. Lời Chào 50 Phòng</button>
+      <button class="tab-btn" data-tab="promosPanel">2. Clip Quảng Cáo Chung (R2)</button>
+    </div>
+
+    <!-- TAB 1: QUẢN LÝ 50 PHÒNG -->
+    <div id="roomsPanel" class="panel active">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <input id="searchInput" type="text" placeholder="Tìm số phòng hoặc tên khách..." />
+          <select id="filterStatus">
+            <option value="all">Tất cả (50 phòng)</option>
+            <option value="occupied">Đang có khách</option>
+            <option value="vacant">Phòng trống</option>
+          </select>
+          <span id="statsText" style="font-size: 13px; color: #4b5563;"></span>
+        </div>
+        <div class="toolbar-group">
+          <button id="saveRoomsBtn" class="btn-success">Lưu 50 phòng lên Cloudflare</button>
+          <button id="init50Btn" class="btn-secondary">Khởi tạo mẫu 50 phòng</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 100px;">Phòng</th>
+              <th style="width: 115px;">Trạng thái</th>
+              <th>Tên khách hiển thị (VD: Mr. Yamada)</th>
+              <th style="width: 125px;">Ngôn ngữ</th>
+              <th style="width: 215px;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="roomsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: QUẢN LÝ CLIP QUẢNG CÁO CHUNG -->
+    <div id="promosPanel" class="panel">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button id="addPromoBtn" class="btn-primary">+ Thêm link clip MP4</button>
+          <span style="font-size: 13px; color: #4b5563;">Dán link trực tiếp file .mp4 trên Cloudflare R2 (hỗ trợ phát nối tiếp).</span>
+        </div>
+        <div class="toolbar-group">
+          <button id="savePromosBtn" class="btn-success">Lưu danh sách clip</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">STT</th>
+              <th style="width: 240px;">Tiêu đề hiển thị trên TV</th>
+              <th>URL Video MP4 (Cloudflare R2)</th>
+              <th style="width: 110px;">Trạng thái</th>
+              <th style="width: 90px;">Xóa</th>
+            </tr>
+          </thead>
+          <tbody id="promosBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="notice" class="notice"></div>
+
+  <script>
+    // THAY ĐỊA CHỈ CLOUDFLARE WORKER CỦA BẠN VÀO ĐÂY
+    const API_BASE = "https://ten-worker-cua-ban.workers.dev";
+    const PIN_KEY = "hotel_admin_pin_v1";
+
+    let roomsData = [];
+    let promosData = [];
+
+    function notify(msg) {
+      const el = document.getElementById("notice");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window._nTimer);
+      window._nTimer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function getPin() {
+      const val = document.getElementById("pinInput").value.trim();
+      if (val) localStorage.setItem(PIN_KEY, val);
+      return val || "1234";
+    }
+
+    function createDefault50Rooms() {
+      const list = [];
+      for (let floor = 1; floor <= 5; floor++) {
+        for (let num = 1; num <= 10; num++) {
+          const code = String(floor * 100 + num);
+          list.push({
+            room: code,
+            guestName: code === "101" ? "Mr. Yamada" : "",
+            status: code === "101" ? "occupied" : "vacant",
+            lang: "en",
+            temp: 22,
+            tempLow: 18
+          });
+        }
+      }
+      return list;
+    }
+
+    function escapeAttr(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    async function loadFromCloud() {
+      try {
+        const res = await fetch(`${API_BASE}/api/state`, { cache: "no-store" });
+        const data = await res.json();
+        if (data && data.ok) {
+          roomsData = Array.isArray(data.rooms) && data.rooms.length ? data.rooms : createDefault50Rooms();
+          promosData = Array.isArray(data.promos) ? data.promos : [];
+          renderRooms();
+          renderPromos();
+          notify("Đã tải dữ liệu mới nhất từ Cloudflare.");
+          return;
+        }
+      } catch (e) {}
+
+      if (!roomsData.length) roomsData = createDefault50Rooms();
+      renderRooms();
+      renderPromos();
+      notify("Chưa kết nối được Worker — kiểm tra lại API_BASE.");
+    }
+
+    async function pushRooms(msg = "Đã lưu dữ liệu 50 phòng lên Cloudflare.") {
+      try {
+        const res = await fetch(`${API_BASE}/api/rooms`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Pin": getPin()
+          },
+          body: JSON.stringify({ rooms: roomsData })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          notify(data.error || "Lưu phòng thất bại.");
+          return;
+        }
+        notify(msg);
+      } catch (e) {
+        notify("Lỗi mạng khi lưu lên Cloudflare.");
+      }
+    }
+
+    async function pushPromos() {
+      try {
+        const res = await fetch(`${API_BASE}/api/promos`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Pin": getPin()
+          },
+          body: JSON.stringify({ promos: promosData })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          notify(data.error || "Lưu clip thất bại.");
+          return;
+        }
+        notify("Đã cập nhật danh sách clip quảng cáo chung.");
+      } catch (e) {
+        notify("Lỗi mạng khi lưu clip.");
+      }
+    }
+
+    function renderRooms() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const filter = document.getElementById("filterStatus").value;
+      const tbody = document.getElementById("roomsBody");
+      tbody.innerHTML = "";
+
+      const occupiedCount = roomsData.filter(r => r.status === "occupied" && r.guestName.trim()).length;
+      document.getElementById("statsText").textContent =
+        `Có khách: ${occupiedCount} | Trống: ${roomsData.length - occupiedCount}`;
+
+      const filtered = roomsData.filter(item => {
+        const isOccupied = item.status === "occupied" && item.guestName.trim() !== "";
+        if (filter === "occupied" && !isOccupied) return false;
+        if (filter === "vacant" && isOccupied) return false;
+        if (q) {
+          return String(item.room).toLowerCase().includes(q) ||
+                 String(item.guestName || "").toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      filtered.forEach(item => {
+        const isOccupied = item.status === "occupied" && item.guestName.trim() !== "";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="room-badge">P.${item.room}</span></td>
+          <td>
+            <span class="status-tag ${isOccupied ? "status-occupied" : "status-vacant"}">
+              ${isOccupied ? "Có khách" : "Trống"}
+            </span>
+          </td>
+          <td>
+            <input type="text" class="full-input guest-input" data-room="${item.room}"
+              value="${escapeAttr(item.guestName)}" placeholder="Nhập tên khách (VD: Mr. Yamada)..." />
+          </td>
+          <td>
+            <select class="lang-select" data-room="${item.room}">
+              <option value="en" ${item.lang === "en" ? "selected" : ""}>English</option>
+              <option value="ja" ${item.lang === "ja" ? "selected" : ""}>日本語</option>
+            </select>
+          </td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-primary btn-sm btn-save-one" data-room="${item.room}">Lưu</button>
+              <button class="btn-warning btn-sm btn-checkout" data-room="${item.room}">Trả phòng</button>
+              <button class="btn-secondary btn-sm btn-view" data-room="${item.room}">Xem TV</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll(".guest-input").forEach(inp => {
+        inp.addEventListener("input", e => {
+          const target = roomsData.find(r => String(r.room) === String(e.target.dataset.room));
+          if (target) {
+            target.guestName = e.target.value;
+            target.status = e.target.value.trim() ? "occupied" : "vacant";
+          }
+        });
+        inp.addEventListener("keydown", e => {
+          if (e.key === "Enter") {
+            renderRooms();
+            pushRooms(`Đã cập nhật phòng ${e.target.dataset.room}.`);
+          }
+        });
+      });
+
+      tbody.querySelectorAll(".lang-select").forEach(sel => {
+        sel.addEventListener("change", e => {
+          const target = roomsData.find(r => String(r.room) === String(e.target.dataset.room));
+          if (target) {
+            target.lang = e.target.value;
+            pushRooms(`Đã đổi ngôn ngữ phòng ${e.target.dataset.room}.`);
+          }
+        });
+      });
+
+      tbody.querySelectorAll(".btn-save-one").forEach(btn => {
+        btn.addEventListener("click", e => {
+          renderRooms();
+          pushRooms(`Đã cập nhật lời chào phòng ${e.target.dataset.room}.`);
+        });
+      });
+
+      tbody.querySelectorAll(".btn-checkout").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const code = e.target.dataset.room;
+          const target = roomsData.find(r => String(r.room) === String(code));
+          if (target) {
+            target.guestName = "";
+            target.status = "vacant";
+            renderRooms();
+            pushRooms(`Đã trả phòng ${code}.`);
+          }
+        });
+      });
+
+      tbody.querySelectorAll(".btn-view").forEach(btn => {
+        btn.addEventListener("click", e => {
+          window.open(`tv-home.html?room=${encodeURIComponent(e.target.dataset.room)}`, "_blank");
+        });
+      });
+    }
+
+    function renderPromos() {
+      const tbody = document.getElementById("promosBody");
+      tbody.innerHTML = "";
+
+      promosData.forEach((p, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${idx + 1}</strong></td>
+          <td>
+            <input type="text" class="full-input promo-title" data-idx="${idx}"
+              value="${escapeAttr(p.title)}" placeholder="VD: Spa & Dining Offer" />
+          </td>
+          <td>
+            <input type="text" class="full-input promo-url" data-idx="${idx}"
+              value="${escapeAttr(p.url)}" placeholder="https://pub-xxxx.r2.dev/promo1.mp4" />
+          </td>
+          <td>
+            <select class="promo-active" data-idx="${idx}">
+              <option value="1" ${p.active !== false ? "selected" : ""}>Đang bật</option>
+              <option value="0" ${p.active === false ? "selected" : ""}>Tạm tắt</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn-danger btn-sm promo-del" data-idx="${idx}">Xóa</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll(".promo-title").forEach(inp => {
+        inp.addEventListener("input", e => {
+          promosData[Number(e.target.dataset.idx)].title = e.target.value;
+        });
+      });
+      tbody.querySelectorAll(".promo-url").forEach(inp => {
+        inp.addEventListener("input", e => {
+          promosData[Number(e.target.dataset.idx)].url = e.target.value.trim();
+        });
+      });
+      tbody.querySelectorAll(".promo-active").forEach(sel => {
+        sel.addEventListener("change", e => {
+          promosData[Number(e.target.dataset.idx)].active = e.target.value === "1";
+        });
+      });
+      tbody.querySelectorAll(".promo-del").forEach(btn => {
+        btn.addEventListener("click", e => {
+          promosData.splice(Number(e.target.dataset.idx), 1);
+          renderPromos();
+        });
+      });
+    }
+
+    // Chuyển tab
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", renderRooms);
+    document.getElementById("filterStatus").addEventListener("change", renderRooms);
+    document.getElementById("saveRoomsBtn").addEventListener("click", () => {
+      renderRooms();
+      pushRooms();
+    });
+    document.getElementById("init50Btn").addEventListener("click", () => {
+      roomsData = createDefault50Rooms();
+      renderRooms();
+      pushRooms("Đã khởi tạo 50 phòng mẫu lên Cloudflare.");
+    });
+
+    document.getElementById("addPromoBtn").addEventListener("click", () => {
+      promosData.push({ title: "Hotel Promotion", url: "", active: true });
+      renderPromos();
+    });
+    document.getElementById("savePromosBtn").addEventListener("click", pushPromos);
+    document.getElementById("reloadCloudBtn").addEventListener("click", loadFromCloud);
+
+    const savedPin = localStorage.getItem(PIN_KEY);
+    if (savedPin) document.getElementById("pinInput").value = savedPin;
+
+    loadFromCloud();
+  </script>
+</body>
+</html>
