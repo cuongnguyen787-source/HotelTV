@@ -63,10 +63,11 @@
       word-break: break-word;
     }
 
-    .welcome-date {
-      font-size: clamp(15px, 1.5vw, 22px);
-      font-weight: 400;
-      color: var(--text-muted);
+    .welcome-room {
+      font-size: clamp(20px, 1.9vw, 30px);
+      font-weight: 500;
+      color: var(--focus-border);
+      letter-spacing: 0.02em;
     }
 
     .meta-box {
@@ -310,13 +311,13 @@
     <div class="top-bar">
       <div class="welcome-box">
         <h1 id="welcomeHeading" class="welcome-title">Welcome,<br>Guest</h1>
-        <div id="leftDateText" class="welcome-date">Tuesday, April 23</div>
+        <div id="roomSubText" class="welcome-room">Room 101</div>
       </div>
 
       <div class="meta-box">
         <div class="clock-line">
-          <span id="rightDateText">Tuesday, April 23</span>
-          <span id="clockTime" class="time-strong">2:17 PM</span>
+          <span id="rightDateText">Monday, November 23</span>
+          <span id="clockTime" class="time-strong">4:13 PM</span>
         </div>
 
         <div class="weather-row">
@@ -405,6 +406,7 @@
       en: {
         welcomePrefix: "Welcome,",
         defaultGuest: "Guest",
+        roomLabel: `Room ${roomCode}`,
         locale: "en-US",
         tv: "TV CHANNELS",
         movies: "MOVIES",
@@ -416,6 +418,7 @@
       ja: {
         welcomePrefix: "ようこそ、",
         defaultGuest: "お客様",
+        roomLabel: `部屋 ${roomCode}`,
         locale: "ja-JP",
         tv: "テレビチャンネル",
         movies: "映画・VOD",
@@ -468,7 +471,6 @@
         hour12: true
       });
 
-      document.getElementById("leftDateText").textContent = dateStr;
       document.getElementById("rightDateText").textContent = dateStr;
       document.getElementById("clockTime").textContent = timeStr;
     }
@@ -487,8 +489,13 @@
       miniVideo.style.display = "block";
       promoTitleEl.textContent = item.title || `Promo #${currentPromoIdx + 1}`;
 
-      if (miniVideo.src !== item.url) {
-        miniVideo.src = item.url;
+      const bustedUrl = item.url.includes("?")
+        ? `${item.url}&_t=${Date.now()}`
+        : `${item.url}?_t=${Date.now()}`;
+
+      if (!miniVideo.dataset.baseUrl || miniVideo.dataset.baseUrl !== item.url) {
+        miniVideo.dataset.baseUrl = item.url;
+        miniVideo.src = bustedUrl;
       }
       miniVideo.play().catch(() => {});
     }
@@ -571,6 +578,7 @@
 
       document.getElementById("welcomeHeading").innerHTML =
         `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
+      document.getElementById("roomSubText").textContent = dict.roomLabel;
 
       document.getElementById("lblTv").textContent = dict.tv;
       document.getElementById("lblMovies").textContent = dict.movies;
@@ -610,7 +618,11 @@
 
       try {
         const res = await fetch(`${API_BASE}/api/state?room=${encodeURIComponent(roomCode)}&_t=${Date.now()}`, {
-          cache: "no-store"
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache"
+          }
         });
         const data = await res.json();
         if (data && data.ok) {
@@ -619,6 +631,8 @@
         }
       } catch (e) {}
     }
+
+    window.syncFromCloud = syncFromCloud;
 
     function triggerAction(action) {
       if (action === "lang") {
@@ -700,7 +714,7 @@
     setFocus(1);
     syncFromCloud();
     setInterval(updateClock, 15000);
-    setInterval(syncFromCloud, 20000);
+    setInterval(syncFromCloud, 8000);
   </script>
 </body>
 </html>
