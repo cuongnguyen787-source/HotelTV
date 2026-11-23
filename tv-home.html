@@ -778,5 +778,30 @@
     setInterval(updateClock, 15000);
     setInterval(syncFromCloud, 20000);
   </script>
+  <script>
+(function() {
+  function enableTvRemoteClicks() {
+    var selector = '.card, .tile, .menu-card, .tv-card, .promo, .promo-card, [data-action], [onclick], [role="button"]';
+    var items = document.querySelectorAll(selector);
+    items.forEach(function(el) {
+      if (!el.hasAttribute('tabindex')) {
+        el.setAttribute('tabindex', '0');
+      }
+      if (!el.__tvOkBound) {
+        el.__tvOkBound = true;
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 23) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.click();
+          }
+        });
+      }
+    });
+  }
+  enableTvRemoteClicks();
+  setTimeout(enableTvRemoteClicks, 1000);
+})();
+</script>
 </body>
 </html>
