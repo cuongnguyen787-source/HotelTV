@@ -399,18 +399,14 @@
   <script>
     const API_BASE = "https://hotel-tv-api.cuongnguyen787.workers.dev";
     const params = new URLSearchParams(window.location.search);
-    const urlRoom = (params.get("room") || "").trim();
-    let activeRoomCode = urlRoom || "101";
-
-    function getCacheKey(room) {
-      return `hotel_tv_state_${room}_v1`;
-    }
+    const roomCode = (params.get("room") || "101").trim();
+    const CACHE_KEY = `hotel_tv_state_${roomCode}_v2`;
 
     const I18N = {
       en: {
         welcomePrefix: "Welcome,",
         defaultGuest: "Guest",
-        roomPrefix: "Room",
+        roomLabel: `Room ${roomCode}`,
         locale: "en-US",
         tv: "TV CHANNELS",
         movies: "MOVIES",
@@ -422,7 +418,7 @@
       ja: {
         welcomePrefix: "ようこそ、",
         defaultGuest: "お客様",
-        roomPrefix: "部屋",
+        roomLabel: `部屋 ${roomCode}`,
         locale: "ja-JP",
         tv: "テレビチャンネル",
         movies: "映画・VOD",
@@ -493,29 +489,13 @@
       miniVideo.style.display = "block";
       promoTitleEl.textContent = item.title || `Promo #${currentPromoIdx + 1}`;
 
-      const rawUrl = String(item.url || "").trim();
-      const bustedUrl = rawUrl.includes("?")
-        ? `${rawUrl}&_t=${Date.now()}`
-        : `${rawUrl}?_t=${Date.now()}`;
-
       miniVideo.muted = true;
-      if (miniVideo.dataset.baseUrl !== rawUrl) {
-        miniVideo.dataset.baseUrl = rawUrl;
-        miniVideo.src = bustedUrl;
+      if (miniVideo.src !== item.url) {
+        miniVideo.src = item.url;
         miniVideo.load();
       }
-      const p = miniVideo.play();
-      if (p && p.catch) {
-        p.catch(() => {
-          promoFallback.style.display = "flex";
-        });
-      }
+      miniVideo.play().catch(() => {});
     }
-
-    miniVideo.addEventListener("playing", () => {
-      promoFallback.style.display = "none";
-      miniVideo.style.display = "block";
-    });
 
     miniVideo.addEventListener("ended", () => {
       playMiniPromoAt(currentPromoIdx + 1);
@@ -524,8 +504,6 @@
     miniVideo.addEventListener("error", () => {
       if (activePromos.length > 1) {
         setTimeout(() => playMiniPromoAt(currentPromoIdx + 1), 1500);
-      } else {
-        promoFallback.style.display = "flex";
       }
     });
 
@@ -577,59 +555,27 @@
       fullVideo.play().catch(() => {});
     });
 
-    function extractPromoList(state, record) {
-      const candidates = [
-        state && state.promos,
-        state && state.videos,
-        state && state.ads,
-        record && record.promos,
-        record && record.videos,
-        record && record.ads
-      ];
-      for (const arr of candidates) {
-        if (Array.isArray(arr) && arr.length > 0) {
-          return arr.filter(p => p && p.active !== false && (p.url || p.src || p.videoUrl));
-        }
-      }
-      return [];
-    }
-
     function applyStateToUI(state) {
+      if (!state || typeof state !== "object") return;
       const prevFocus = focusIndex;
-      const rootObj = (state && typeof state === "object") ? state : {};
-      const record = (rootObj.room && typeof rootObj.room === "object")
-        ? rootObj.room
-        : ((rootObj.data && typeof rootObj.data === "object") ? rootObj.data : rootObj);
+      const record = state.room || {};
+      const dispRoom = String(record.room || roomCode).trim();
 
-      const resolvedRoom = String(
-        record.room || record.room_code || record.roomCode || rootObj.room_code || activeRoomCode || "101"
-      ).trim();
-      activeRoomCode = resolvedRoom;
-
-      const langCandidate = record.lang || rootObj.lang;
-      if (!manualLangOverride && langCandidate && I18N[langCandidate]) {
-        currentLang = langCandidate;
+      if (!manualLangOverride && record.lang && I18N[record.lang]) {
+        currentLang = record.lang;
       }
 
       const dict = I18N[currentLang] || I18N.en;
-      const rawGuest =
-        record.guestName ??
-        record.guest_name ??
-        record.guest ??
-        record.greeting ??
-        record.name ??
-        rootObj.guestName ??
-        rootObj.guest_name ??
-        rootObj.guest ??
-        rootObj.greeting ??
-        "";
-
-      const cleanGuest = String(rawGuest || "").trim();
-      const guestDisplay = cleanGuest ? cleanGuest : dict.defaultGuest;
+      const rawGuest = String(record.guestName || "").trim();
+      const guestDisplay =
+        record.status === "vacant" || !rawGuest
+          ? dict.defaultGuest
+          : rawGuest;
 
       document.getElementById("welcomeHeading").innerHTML =
         `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
-      document.getElementById("roomSubText").textContent = `${dict.roomPrefix} ${activeRoomCode}`;
+      document.getElementById("roomSubText").textContent =
+        currentLang === "ja" ? `部屋 ${dispRoom}` : `Room ${dispRoom}`;
 
       document.getElementById("lblTv").textContent = dict.tv;
       document.getElementById("lblMovies").textContent = dict.movies;
@@ -641,17 +587,15 @@
       document.getElementById("langEn").classList.toggle("active-lang", currentLang === "en");
       document.getElementById("langJa").classList.toggle("active-lang", currentLang === "ja");
 
-      const tempMain = record.temp ?? rootObj.temp ?? 22;
-      const tempLow = record.tempLow ?? rootObj.tempLow ?? 18;
+      const tempMain = record.temp ?? 22;
+      const tempLow = record.tempLow ?? 18;
       document.getElementById("weatherMain").textContent = `${tempMain}°C`;
       document.getElementById("weatherHigh").textContent = `${tempMain}°C`;
       document.getElementById("weatherLow").textContent = `(${tempLow})`;
 
-      const list = extractPromoList(rootObj, record).map(p => ({
-        title: p.title || p.name || "",
-        url: String(p.url || p.src || p.videoUrl || "").trim()
-      })).filter(p => p.url);
-
+      const list = Array.isArray(state.promos)
+        ? state.promos.filter(p => p && p.active !== false && p.url && p.url.trim())
+        : [];
       const sig = JSON.stringify(list.map(p => p.url));
       if (sig !== lastPromoSignature) {
         lastPromoSignature = sig;
@@ -664,40 +608,35 @@
     }
 
     async function syncFromCloud() {
-      const targetRoom = activeRoomCode || "101";
       try {
-        const cached = localStorage.getItem(getCacheKey(targetRoom));
+        const cached = localStorage.getItem(CACHE_KEY);
         if (cached) applyStateToUI(JSON.parse(cached));
       } catch (e) {}
 
       try {
-        const res = await fetch(`${API_BASE}/api/state?room=${encodeURIComponent(targetRoom)}&_t=${Date.now()}`, {
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache"
-          }
+        const res = await fetch(`${API_BASE}/api/state?room=${encodeURIComponent(roomCode)}&_t=${Date.now()}`, {
+          cache: "no-store"
         });
         const data = await res.json();
-        if (data && typeof data === "object") {
-          localStorage.setItem(getCacheKey(targetRoom), JSON.stringify(data));
+        if (data && data.ok) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
           applyStateToUI(data);
         }
       } catch (e) {}
     }
 
     window.syncFromCloud = syncFromCloud;
-    window.applyStateToUI = applyStateToUI;
 
     function triggerAction(action) {
       if (action === "lang") {
         manualLangOverride = true;
         currentLang = currentLang === "en" ? "ja" : "en";
-        let cachedObj = {};
+        let cachedObj = null;
         try {
-          cachedObj = JSON.parse(localStorage.getItem(getCacheKey(activeRoomCode)) || "{}");
+          cachedObj = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
         } catch (e) {}
-        applyStateToUI(cachedObj);
+        if (cachedObj) applyStateToUI(cachedObj);
+        else updateClock();
         return;
       }
 
@@ -707,7 +646,7 @@
       }
 
       if (window.AndroidBridge && typeof window.AndroidBridge.onMenuSelect === "function") {
-        window.AndroidBridge.onMenuSelect(action, activeRoomCode);
+        window.AndroidBridge.onMenuSelect(action, roomCode);
         return;
       }
 
@@ -717,7 +656,7 @@
         services: "HOTEL SERVICES (Tiện ích khách sạn)",
         roomservice: "ROOM SERVICE (Đặt dịch vụ phòng)"
       };
-      showToast(`[Phòng ${activeRoomCode}] → ${names[action] || action}`);
+      showToast(`[Phòng ${roomCode}] → ${names[action] || action}`);
     }
 
     const navItems = Array.from(document.querySelectorAll(".tv-nav"));
@@ -769,7 +708,7 @@
     setFocus(1);
     syncFromCloud();
     setInterval(updateClock, 15000);
-    setInterval(syncFromCloud, 8000);
+    setInterval(syncFromCloud, 5000);
   </script>
 </body>
 </html>
