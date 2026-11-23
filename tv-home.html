@@ -557,24 +557,27 @@
 
     function applyStateToUI(state) {
       const prevFocus = focusIndex;
-      const record = (state && state.room) || {
-        room: roomCode,
-        guestName: "",
-        status: "vacant",
-        lang: "en",
-        temp: 22,
-        tempLow: 18
-      };
+      const record = (state && (state.room || state.data || state)) || {};
 
       if (!manualLangOverride && record.lang && I18N[record.lang]) {
         currentLang = record.lang;
       }
 
       const dict = I18N[currentLang] || I18N.en;
-      const guestDisplay =
-        record.status === "vacant" || !record.guestName || !record.guestName.trim()
-          ? dict.defaultGuest
-          : record.guestName.trim();
+      const rawGuest =
+        record.guestName ??
+        record.guest_name ??
+        record.greeting ??
+        record.guest ??
+        record.name ??
+        "";
+
+      const isVacant =
+        record.status === "vacant" ||
+        record.vacant === true ||
+        !String(rawGuest).trim();
+
+      const guestDisplay = isVacant ? dict.defaultGuest : String(rawGuest).trim();
 
       document.getElementById("welcomeHeading").innerHTML =
         `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
