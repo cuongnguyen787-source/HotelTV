@@ -255,7 +255,6 @@
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
     }
 
-    /* Hộp thoại chọn ứng dụng TV có tên + logo */
     .tv-picker-modal {
       position: fixed;
       inset: 0;
@@ -521,7 +520,6 @@
     </div>
   </div>
 
-  <!-- Modal chọn ứng dụng TV có logo + tên -->
   <div id="tvPickerModal" class="tv-picker-modal">
     <div class="tv-picker-box">
       <div class="tv-picker-header">
@@ -552,7 +550,7 @@
     const roomCode = (params.get("room") || "101").trim();
     const CACHE_KEY = `hotel_tv_state_${roomCode}_v2`;
 
-    const FALLBACK_TV_APPS = [
+    const DEFAULT_TV_APPS = [
       { pkg: "com.nghenhin24h.vietplaytv", name: "Vietplaytv", icon: "" },
       { pkg: "vn.vtvcab.vtvprime.atv", name: "VTVprime", icon: "" },
       { pkg: "com.apptv.tvplus", name: "TVplus", icon: "" }
@@ -625,8 +623,8 @@
         .replace(/"/g, "&quot;");
     }
 
-    function renderTvAppCards() {
-      let apps = FALLBACK_TV_APPS;
+    function getTvAppsList() {
+      let apps = DEFAULT_TV_APPS;
       if (window.AndroidBridge && typeof window.AndroidBridge.getTvAppsJson === "function") {
         try {
           const parsed = JSON.parse(window.AndroidBridge.getTvAppsJson());
@@ -635,7 +633,11 @@
           }
         } catch (_e) {}
       }
+      return apps;
+    }
 
+    function renderTvAppCards() {
+      const apps = getTvAppsList();
       tvPickerGrid.innerHTML = apps.map((app) => {
         const hasIcon = app.icon && String(app.icon).startsWith("data:image/");
         const logoHtml = hasIcon
