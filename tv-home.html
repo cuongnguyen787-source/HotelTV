@@ -255,6 +255,116 @@
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
     }
 
+    /* Hộp thoại chọn ứng dụng TV khi bấm thẻ TV */
+    .tv-picker-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 5, 3, 0.84);
+      z-index: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .tv-picker-modal.active {
+      display: flex;
+    }
+
+    .tv-picker-box {
+      width: min(820px, 92vw);
+      background: linear-gradient(160deg, #352216, #1d120c);
+      border: 1.5px solid var(--focus-border);
+      border-radius: 18px;
+      padding: 26px 30px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65);
+    }
+
+    .tv-picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .tv-picker-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .tv-picker-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .tv-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .tv-app-btn {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+    }
+
+    .tv-app-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--focus-border);
+      letter-spacing: 0.05em;
+    }
+
+    .tv-app-name {
+      font-size: 20px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .tv-app-pkg {
+      font-size: 12px;
+      color: var(--text-muted);
+      word-break: break-all;
+      text-align: center;
+    }
+
+    .tv-app-btn:focus,
+    .tv-app-btn.picker-focused,
+    .tv-cancel-btn:focus,
+    .tv-cancel-btn.picker-focused {
+      border-color: var(--focus-border);
+      background: var(--focus-bg);
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .tv-picker-footer {
+      margin-top: 18px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .tv-cancel-btn {
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: 1.5px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      font-size: 15px;
+      cursor: pointer;
+    }
+
     .fullscreen-promo {
       position: fixed;
       inset: 0;
@@ -298,7 +408,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s ease;
-      z-index: 50;
+      z-index: 1100;
     }
 
     .toast.show {
@@ -389,6 +499,42 @@
     </div>
   </div>
 
+  <!-- Modal chọn 1 trong 3 app xem TV -->
+  <div id="tvPickerModal" class="tv-picker-modal">
+    <div class="tv-picker-box">
+      <div class="tv-picker-header">
+        <div>
+          <div id="tvPickerTitle" class="tv-picker-title">Chọn ứng dụng xem TV</div>
+          <div id="tvPickerSub" class="tv-picker-sub">Dùng phím mũi tên / OK để chọn, bấm Back để quay lại</div>
+        </div>
+      </div>
+
+      <div class="tv-picker-grid">
+        <button type="button" class="tv-app-btn tv-picker-item" data-pkg="com.nghenhin24h.vietplaytv" data-name="Vietplaytv">
+          <span class="tv-app-num">1</span>
+          <span class="tv-app-name">Vietplaytv</span>
+          <span class="tv-app-pkg">com.nghenhin24h.vietplaytv</span>
+        </button>
+
+        <button type="button" class="tv-app-btn tv-picker-item" data-pkg="vn.vtvcab.vtvprime.atv" data-name="VTVprime">
+          <span class="tv-app-num">2</span>
+          <span class="tv-app-name">VTVprime</span>
+          <span class="tv-app-pkg">vn.vtvcab.vtvprime.atv</span>
+        </button>
+
+        <button type="button" class="tv-app-btn tv-picker-item" data-pkg="com.apptv.tvplus" data-name="TVplus">
+          <span class="tv-app-num">3</span>
+          <span class="tv-app-name">TVplus</span>
+          <span class="tv-app-pkg">com.apptv.tvplus</span>
+        </button>
+      </div>
+
+      <div class="tv-picker-footer">
+        <button type="button" id="tvPickerCancelBtn" class="tv-cancel-btn tv-picker-item" data-cancel="1">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <div id="fullscreenPromo" class="fullscreen-promo">
     <video id="fullPromoVideo" playsinline></video>
     <div id="fullscreenHint" class="fullscreen-hint">Bấm phím bất kỳ để quay lại</div>
@@ -413,7 +559,10 @@
         services: "HOTEL SERVICES",
         roomService: "ROOM SERVICE",
         promoHint: "OK: Fullscreen",
-        fsHint: "Press any key to exit"
+        fsHint: "Press any key to exit",
+        pickerTitle: "Select TV App",
+        pickerSub: "Use D-pad / OK to launch, Back to return",
+        pickerClose: "Close"
       },
       ja: {
         welcomePrefix: "ようこそ、",
@@ -425,7 +574,10 @@
         services: "ホテル案内",
         roomService: "ルームサービス",
         promoHint: "OK: 全画面表示",
-        fsHint: "いずれかのキーで戻る"
+        fsHint: "いずれかのキーで戻る",
+        pickerTitle: "テレビアプリを選択",
+        pickerSub: "方向キー / OKで起動、戻るキーで終了",
+        pickerClose: "閉じる"
       }
     };
 
@@ -435,11 +587,15 @@
     let currentPromoIdx = 0;
     let lastPromoSignature = "";
     let isFullscreenPromo = false;
+    let isTvPickerOpen = false;
 
     const miniVideo = document.getElementById("miniPromoVideo");
     const fullVideo = document.getElementById("fullPromoVideo");
     const promoFallback = document.getElementById("promoFallback");
     const promoTitleEl = document.getElementById("promoTitle");
+    const tvPickerModal = document.getElementById("tvPickerModal");
+    const pickerItems = Array.from(document.querySelectorAll(".tv-picker-item"));
+    let pickerFocusIdx = 0;
 
     function showToast(msg) {
       const el = document.getElementById("toast");
@@ -456,6 +612,53 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
+
+    function setPickerFocus(idx) {
+      pickerFocusIdx = (idx + pickerItems.length) % pickerItems.length;
+      pickerItems.forEach((el, i) => {
+        el.classList.toggle("picker-focused", i === pickerFocusIdx);
+      });
+      pickerItems[pickerFocusIdx].focus({ preventScroll: true });
+    }
+
+    function openTvPicker() {
+      isTvPickerOpen = true;
+      tvPickerModal.classList.add("active");
+      setPickerFocus(0);
+    }
+
+    function closeTvPicker() {
+      if (!isTvPickerOpen) return;
+      isTvPickerOpen = false;
+      tvPickerModal.classList.remove("active");
+      pickerItems.forEach(el => el.classList.remove("picker-focused"));
+      setFocus(1);
+    }
+
+    function launchTvPackage(pkg, name) {
+      closeTvPicker();
+      if (window.AndroidBridge && typeof window.AndroidBridge.launchTvApp === "function") {
+        window.AndroidBridge.launchTvApp(pkg, name, roomCode);
+        return;
+      }
+      if (window.AndroidBridge && typeof window.AndroidBridge.launchApp === "function") {
+        window.AndroidBridge.launchApp(pkg, name, roomCode);
+        return;
+      }
+      showToast(`[Phòng ${roomCode}] Mở ${name} (${pkg})`);
+    }
+
+    pickerItems.forEach((el, idx) => {
+      el.addEventListener("mouseenter", () => setPickerFocus(idx));
+      el.addEventListener("click", () => {
+        setPickerFocus(idx);
+        if (el.dataset.cancel === "1") {
+          closeTvPicker();
+        } else {
+          launchTvPackage(el.dataset.pkg, el.dataset.name);
+        }
+      });
+    });
 
     function updateClock() {
       const now = new Date();
@@ -543,6 +746,10 @@
         closeFullscreenPromo();
         return true;
       }
+      if (isTvPickerOpen) {
+        closeTvPicker();
+        return true;
+      }
       return false;
     };
 
@@ -583,6 +790,9 @@
       document.getElementById("lblRoomService").textContent = dict.roomService;
       document.getElementById("promoHint").textContent = dict.promoHint;
       document.getElementById("fullscreenHint").textContent = dict.fsHint;
+      document.getElementById("tvPickerTitle").textContent = dict.pickerTitle;
+      document.getElementById("tvPickerSub").textContent = dict.pickerSub;
+      document.getElementById("tvPickerCancelBtn").textContent = dict.pickerClose;
 
       document.getElementById("langEn").classList.toggle("active-lang", currentLang === "en");
       document.getElementById("langJa").classList.toggle("active-lang", currentLang === "ja");
@@ -604,7 +814,9 @@
       }
 
       updateClock();
-      setFocus(prevFocus);
+      if (!isTvPickerOpen && !isFullscreenPromo) {
+        setFocus(prevFocus);
+      }
     }
 
     async function syncFromCloud() {
@@ -640,6 +852,11 @@
         return;
       }
 
+      if (action === "tv") {
+        openTvPicker();
+        return;
+      }
+
       if (action === "promo") {
         openFullscreenPromo();
         return;
@@ -651,7 +868,6 @@
       }
 
       const names = {
-        tv: "TV CHANNELS (Mở VTVprime / TiviMate)",
         movies: "MOVIES (Mở kho phim VOD)",
         services: "HOTEL SERVICES (Tiện ích khách sạn)",
         roomservice: "ROOM SERVICE (Đặt dịch vụ phòng)"
@@ -682,6 +898,34 @@
       if (isFullscreenPromo) {
         e.preventDefault();
         closeFullscreenPromo();
+        return;
+      }
+
+      if (isTvPickerOpen) {
+        e.preventDefault();
+        if (e.key === "Escape" || e.keyCode === 4 || e.keyCode === 27) {
+          closeTvPicker();
+        } else if (e.key === "ArrowRight" || e.keyCode === 22 || e.key === "ArrowDown" || e.keyCode === 20) {
+          setPickerFocus(pickerFocusIdx + 1);
+        } else if (e.key === "ArrowLeft" || e.keyCode === 21 || e.key === "ArrowUp" || e.keyCode === 19) {
+          setPickerFocus(pickerFocusIdx - 1);
+        } else if (e.key === "1") {
+          setPickerFocus(0);
+          launchTvPackage("com.nghenhin24h.vietplaytv", "Vietplaytv");
+        } else if (e.key === "2") {
+          setPickerFocus(1);
+          launchTvPackage("vn.vtvcab.vtvprime.atv", "VTVprime");
+        } else if (e.key === "3") {
+          setPickerFocus(2);
+          launchTvPackage("com.apptv.tvplus", "TVplus");
+        } else if (e.key === "Enter" || e.keyCode === 23 || e.keyCode === 13) {
+          const cur = pickerItems[pickerFocusIdx];
+          if (cur && cur.dataset.cancel === "1") {
+            closeTvPicker();
+          } else if (cur) {
+            launchTvPackage(cur.dataset.pkg, cur.dataset.name);
+          }
+        }
         return;
       }
 
