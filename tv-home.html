@@ -353,6 +353,26 @@
     .toast.show {
       opacity: 1;
     }
+    html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box !important;
+  max-width: 100%;
+}
+
+/* Ép hàng các thanh/ô chức năng ở dưới thấp và gọn hơn */
+.cards, .menu-grid, .bottom-cards, .tiles, .grid, .row,
+[class*="card"], [class*="tile"], [class*="box"], [class*="panel"], [class*="item"] {
+  max-height: 250px !important;
+}
   </style>
 </head>
 <body>
