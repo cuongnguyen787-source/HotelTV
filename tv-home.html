@@ -10,23 +10,26 @@
       --card-bg: rgba(145, 102, 78, 0.72);
       --card-border: rgba(255, 235, 215, 0.35);
       --accent: #f3c68f;
-      --text-main: #ffffff;
-      --text-sub: rgba(255, 255, 255, 0.82);
-    }
-
-    *, *::before, *::after {
-      box-sizing: border-box;
+      --focus-bg: rgba(74, 47, 30, 0.92);
+      --text-main: #f7efe6;
+      --text-muted: #cbbba8;
     }
 
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
+      max-width: 100vw;
       height: 100%;
       background: radial-gradient(circle at top right, #4a2e22, var(--bg-dark) 70%);
       color: var(--text-main);
       font-family: Arial, Helvetica, sans-serif;
       overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
     }
 
     .tv-app {
@@ -51,12 +54,13 @@
       font-size: 32px;
       line-height: 1.15;
       font-weight: 700;
+      color: var(--text-main);
     }
 
     .sub-info {
       margin-top: 4px;
       font-size: 15px;
-      color: var(--text-sub);
+      color: var(--text-muted);
     }
 
     .right-controls {
@@ -68,7 +72,7 @@
     .clock-box {
       text-align: right;
       font-size: 14px;
-      color: var(--text-sub);
+      color: var(--text-muted);
     }
 
     .lang-btn {
@@ -76,18 +80,19 @@
       border-radius: 8px;
       border: 1.5px solid var(--card-border);
       background: rgba(255, 255, 255, 0.14);
-      color: #fff;
+      color: var(--text-main);
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
+      max-height: 48px;
     }
 
     .lang-btn:focus,
     .lang-btn:hover {
       outline: none;
       border-color: var(--accent);
+      background: var(--focus-bg);
       box-shadow: 0 0 0 3px var(--accent);
-      background: rgba(255, 255, 255, 0.24);
     }
 
     .main-grid {
@@ -95,7 +100,7 @@
       grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(200px, 1.1fr);
       gap: 14px;
       align-items: stretch;
-      height: 220px;
+      height: 210px;
       max-height: 36vh;
     }
 
@@ -126,7 +131,14 @@
     }
 
     .menu-card:focus,
-    .menu-card:hover,
+    .menu-card:hover {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--focus-bg);
+      box-shadow: 0 0 0 3px var(--accent);
+      transform: translateY(-2px);
+    }
+
     .promo-card:focus,
     .promo-card:hover {
       outline: none;
@@ -147,8 +159,8 @@
     }
 
     .promo-play {
-      width: 56px;
-      height: 56px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
       border: 3px solid #181818;
       display: flex;
@@ -305,7 +317,8 @@
       }
 
       var params = new URLSearchParams(window.location.search || '');
-      var room = params.get('room') || '101';
+      var room = (params.get('room') || '101').trim();
+      var urlGreeting = (params.get('greeting') || '').trim();
 
       var i18n = {
         en: {
@@ -335,6 +348,15 @@
       var currentLang = getPref('hotel_lang', 'en');
       if (!i18n[currentLang]) currentLang = 'en';
 
+      function applyCustomGreetingIfAny() {
+        var el = document.getElementById('welcomeText');
+        if (!el) return;
+        var custom = urlGreeting || getPref('room_greeting_' + room, '');
+        if (custom && String(custom).trim() !== '') {
+          el.innerHTML = String(custom).trim().replace(/\n/g, '<br>');
+        }
+      }
+
       function applyLang(lang) {
         currentLang = lang;
         setPref('hotel_lang', lang);
@@ -348,6 +370,23 @@
         document.getElementById('lblPromoTitle').textContent = t.promoTitle;
         document.getElementById('lblPromoSub').textContent = t.promoSub;
         document.getElementById('langToggleBtn').textContent = t.langBtn;
+        applyCustomGreetingIfAny();
+      }
+
+      function fetchRemoteRoomGreeting() {
+        if (typeof fetch !== 'function') return;
+        var apiUrl = 'https://YOUR-WORKER-URL/api/room?room=' + encodeURIComponent(room) + '&_t=' + Date.now();
+        fetch(apiUrl, { cache: 'no-store' })
+          .then(function(res) { return res.ok ? res.json() : null; })
+          .then(function(data) {
+            if (!data) return;
+            var serverGreeting = data.greeting || data.welcome || data.message || (data.data && data.data.greeting);
+            if (serverGreeting && String(serverGreeting).trim() !== '') {
+              setPref('room_greeting_' + room, String(serverGreeting).trim());
+              applyCustomGreetingIfAny();
+            }
+          })
+          .catch(function() {});
       }
 
       function updateClock() {
@@ -444,6 +483,7 @@
       });
 
       applyLang(currentLang);
+      fetchRemoteRoomGreeting();
       updateClock();
       setInterval(updateClock, 30000);
       setTimeout(function() {
