@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=1920, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Hotel TV Welcome</title>
   <style>
     :root {
@@ -14,6 +14,15 @@
       --focus-bg: rgba(74, 47, 30, 0.92);
       --text-main: #f7efe6;
       --text-muted: #cbbba8;
+      html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+*, *::before, *::after {
+  box-sizing: inherit;
+}
     }
 
     * {
