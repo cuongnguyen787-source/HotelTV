@@ -251,8 +251,23 @@
       </div>
     </div>
 
-    <!-- TAB 3: QUẢN LÝ ẢNH NỀN KHÁCH SẠN & WI-FI -->
+    <!-- TAB 3: QUẢN LÝ THƯƠNG HIỆU, ẢNH NỀN KHÁCH SẠN & WI-FI -->
     <div id="mediaWifiPanel" class="panel">
+      <div class="wifi-card">
+        <div class="wifi-card-title">Tên & Logo Khách Sạn Trên Màn Hình TV</div>
+        <div class="wifi-card-sub">Hiển thị ở góc trên bên trái màn hình TV; để trống logo nếu chỉ muốn hiện tên khách sạn.</div>
+        <div class="wifi-grid">
+          <div>
+            <label class="field-label" for="hotelNameInput">Tên khách sạn</label>
+            <input id="hotelNameInput" type="text" class="full-input" placeholder="VD: GRANDVIEW HOTEL" />
+          </div>
+          <div>
+            <label class="field-label" for="hotelLogoInput">URL Logo khách sạn (Cloudflare R2)</label>
+            <input id="hotelLogoInput" type="text" class="full-input" placeholder="https://pub-xxxx.r2.dev/logo-hotel.png" />
+          </div>
+        </div>
+      </div>
+
       <div class="wifi-card">
         <div class="wifi-card-title">Thông Tin Wi-Fi Hiển Thị Dưới Số Phòng</div>
         <div class="wifi-card-sub">Hiển thị gọn ngay dưới dòng Room 101 trên TV; để trống nếu không muốn hiện.</div>
@@ -274,7 +289,7 @@
           <span style="font-size: 13px; color: #4b5563;">Dán link trực tiếp file ảnh (.jpg, .png, .webp) trên Cloudflare R2 — ảnh đầu tiên đang bật sẽ làm nền TV.</span>
         </div>
         <div class="toolbar-group">
-          <button id="saveSettingsBtn" class="btn-success">Lưu ảnh nền & Wi-Fi</button>
+          <button id="saveSettingsBtn" class="btn-success">Lưu cài đặt TV</button>
         </div>
       </div>
 
@@ -305,7 +320,7 @@
     let roomsData = [];
     let promosData = [];
     let backgroundsData = [];
-    let wifiSettings = { wifiName: "", wifiPass: "" };
+    let wifiSettings = { wifiName: "", wifiPass: "", hotelName: "", hotelLogo: "" };
 
     function notify(msg) {
       const el = document.getElementById("notice");
@@ -352,6 +367,8 @@
         localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify({
           wifiName: wifiSettings.wifiName || "",
           wifiPass: wifiSettings.wifiPass || "",
+          hotelName: wifiSettings.hotelName || "",
+          hotelLogo: wifiSettings.hotelLogo || "",
           backgrounds: backgroundsData
         }));
       } catch (_e) {}
@@ -364,15 +381,19 @@
         const parsed = JSON.parse(raw);
         wifiSettings.wifiName = parsed.wifiName || "";
         wifiSettings.wifiPass = parsed.wifiPass || "";
+        wifiSettings.hotelName = parsed.hotelName || "";
+        wifiSettings.hotelLogo = parsed.hotelLogo || "";
         if (Array.isArray(parsed.backgrounds)) {
           backgroundsData = parsed.backgrounds;
         }
       } catch (_e) {}
     }
 
-    function syncWifiInputsFromState() {
+    function syncSettingsInputsFromState() {
       document.getElementById("wifiNameInput").value = wifiSettings.wifiName || "";
       document.getElementById("wifiPassInput").value = wifiSettings.wifiPass || "";
+      document.getElementById("hotelNameInput").value = wifiSettings.hotelName || "";
+      document.getElementById("hotelLogoInput").value = wifiSettings.hotelLogo || "";
     }
 
     function getActiveBgUrl() {
@@ -402,8 +423,15 @@
             wifiSettings.wifiPass = String(cloudWifiPass || "");
           }
 
+          if (data.hotelName !== undefined) {
+            wifiSettings.hotelName = String(data.hotelName || "");
+          }
+          if (data.hotelLogo !== undefined) {
+            wifiSettings.hotelLogo = String(data.hotelLogo || "");
+          }
+
           saveLocalSettings();
-          syncWifiInputsFromState();
+          syncSettingsInputsFromState();
           renderRooms();
           renderPromos();
           renderBackgrounds();
@@ -413,7 +441,7 @@
       } catch (e) {}
 
       if (!roomsData.length) roomsData = createDefault50Rooms();
-      syncWifiInputsFromState();
+      syncSettingsInputsFromState();
       renderRooms();
       renderPromos();
       renderBackgrounds();
@@ -465,6 +493,8 @@
     async function pushSettings() {
       wifiSettings.wifiName = document.getElementById("wifiNameInput").value.trim();
       wifiSettings.wifiPass = document.getElementById("wifiPassInput").value.trim();
+      wifiSettings.hotelName = document.getElementById("hotelNameInput").value.trim();
+      wifiSettings.hotelLogo = document.getElementById("hotelLogoInput").value.trim();
       saveLocalSettings();
 
       const payload = {
@@ -472,8 +502,8 @@
         wifiPass: wifiSettings.wifiPass,
         bgImage: getActiveBgUrl(),
         backgrounds: backgroundsData,
-        hotelName: document.getElementById("hotelNameInput").value.trim(),
-        hotelLogo: document.getElementById("hotelLogoInput").value.trim()
+        hotelName: wifiSettings.hotelName,
+        hotelLogo: wifiSettings.hotelLogo
       };
 
       try {
@@ -490,7 +520,7 @@
           notify(data.error || "Đã lưu cục bộ; kiểm tra route /api/settings trên Worker.");
           return;
         }
-        notify("Đã lưu ảnh nền & thông tin Wi-Fi lên Cloudflare.");
+        notify("Đã lưu tên/logo, ảnh nền & Wi-Fi lên Cloudflare.");
       } catch (e) {
         notify("Đã lưu cục bộ; lỗi mạng khi gửi lên Worker.");
       }
@@ -737,6 +767,12 @@
     document.getElementById("addBgBtn").addEventListener("click", () => {
       backgroundsData.push({ title: "Ảnh nền khách sạn", url: "", active: true });
       renderBackgrounds();
+    });
+    document.getElementById("hotelNameInput").addEventListener("input", e => {
+      wifiSettings.hotelName = e.target.value;
+    });
+    document.getElementById("hotelLogoInput").addEventListener("input", e => {
+      wifiSettings.hotelLogo = e.target.value.trim();
     });
     document.getElementById("wifiNameInput").addEventListener("input", e => {
       wifiSettings.wifiName = e.target.value;
