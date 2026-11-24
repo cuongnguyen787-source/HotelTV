@@ -27,7 +27,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: "Segoe UI", Roboto, "Noto Sans JP", "Noto Sans KR", Arial, sans-serif;
+      font-family: "Segoe UI", Roboto, "Noto Sans JP", "Noto Sans SC", "Noto Sans KR", Arial, sans-serif;
       color: var(--text-main);
       background: radial-gradient(circle at 20% 25%, #2c1c12 0%, var(--bg-top) 45%, var(--bg-bottom) 100%);
       background-size: cover;
@@ -174,21 +174,25 @@
     .lang-switch {
       margin-top: 2px;
       display: inline-flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
+      justify-content: flex-end;
+      gap: 6px;
       padding: 6px 12px;
       border-radius: 10px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--text-muted);
-      font-size: clamp(14px, 1.2vw, 18px);
+      font-size: clamp(13px, 1.1vw, 16px);
       cursor: pointer;
       transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease;
     }
 
     .lang-switch .active-lang {
       color: var(--text-main);
-      font-weight: 600;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 4px;
     }
 
     .lang-switch:focus,
@@ -510,8 +514,8 @@
 
       <div class="meta-box">
         <div class="clock-line">
-          <span id="rightDateText">Monday, November 23</span>
-          <span id="clockTime" class="time-strong">4:13 PM</span>
+          <span id="rightDateText">Tuesday, November 24</span>
+          <span id="clockTime" class="time-strong">4:53 PM</span>
         </div>
 
         <div class="weather-row">
@@ -531,6 +535,10 @@
           <span id="langEn" class="active-lang">English</span>
           <span>/</span>
           <span id="langJa">日本語</span>
+          <span>/</span>
+          <span id="langZh">中文</span>
+          <span>/</span>
+          <span id="langKo">한국어</span>
         </button>
       </div>
     </div>
@@ -577,7 +585,7 @@
         </div>
         <div class="promo-badge">
           <span id="promoTitle">Promotions</span>
-          <span id="promoHint">OK: Toàn màn hình</span>
+          <span id="promoHint">OK: Fullscreen</span>
         </div>
       </button>
     </div>
@@ -587,22 +595,22 @@
     <div class="tv-picker-box">
       <div class="tv-picker-header">
         <div>
-          <div id="tvPickerTitle" class="tv-picker-title">Chọn ứng dụng xem TV</div>
-          <div id="tvPickerSub" class="tv-picker-sub">Dùng phím mũi tên / OK để chọn, bấm Back để quay lại</div>
+          <div id="tvPickerTitle" class="tv-picker-title">Select TV App</div>
+          <div id="tvPickerSub" class="tv-picker-sub">Use D-pad / OK to launch, Back to return</div>
         </div>
       </div>
 
       <div id="tvPickerGrid" class="tv-picker-grid"></div>
 
       <div class="tv-picker-footer">
-        <button type="button" id="tvPickerCancelBtn" class="tv-cancel-btn tv-picker-item" data-cancel="1">Đóng</button>
+        <button type="button" id="tvPickerCancelBtn" class="tv-cancel-btn tv-picker-item" data-cancel="1">Close</button>
       </div>
     </div>
   </div>
 
   <div id="fullscreenPromo" class="fullscreen-promo">
     <video id="fullPromoVideo" playsinline preload="metadata"></video>
-    <div id="fullscreenHint" class="fullscreen-hint">Bấm phím bất kỳ để quay lại</div>
+    <div id="fullscreenHint" class="fullscreen-hint">Press any key to exit</div>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -612,6 +620,8 @@
     const params = new URLSearchParams(window.location.search);
     const roomCode = (params.get("room") || "101").trim();
     const CACHE_KEY = `hotel_tv_state_${roomCode}_v2`;
+
+    const LANG_ORDER = ["en", "ja", "zh", "ko"];
 
     const DEFAULT_TV_APPS = [
       { pkg: "com.nghenhin24h.vietplaytv", name: "Vietplaytv", icon: "" },
@@ -629,7 +639,7 @@
       en: {
         welcomePrefix: "Welcome,",
         defaultGuest: "Guest",
-        roomLabel: `Room ${roomCode}`,
+        formatRoom: (r) => `Room ${r}`,
         locale: "en-US",
         tv: "TV CHANNELS",
         movies: "MOVIES",
@@ -647,7 +657,7 @@
       ja: {
         welcomePrefix: "ようこそ、",
         defaultGuest: "お客様",
-        roomLabel: `部屋 ${roomCode}`,
+        formatRoom: (r) => `部屋 ${r}`,
         locale: "ja-JP",
         tv: "テレビチャンネル",
         movies: "映画・VOD",
@@ -661,6 +671,42 @@
         pickerClose: "閉じる",
         wifiPrefix: "Wi-Fi",
         passLabel: "PW"
+      },
+      zh: {
+        welcomePrefix: "欢迎光临，",
+        defaultGuest: "贵宾",
+        formatRoom: (r) => `${r} 房间`,
+        locale: "zh-CN",
+        tv: "电视频道",
+        movies: "电影点播",
+        services: "酒店服务",
+        roomService: "客房送餐",
+        promoHint: "OK: 全屏播放",
+        fsHint: "按任意键返回",
+        pickerTitleTv: "选择电视应用",
+        pickerTitleMovies: "选择影视应用",
+        pickerSub: "使用方向键 / OK 启动，返回键退出",
+        pickerClose: "关闭",
+        wifiPrefix: "Wi-Fi",
+        passLabel: "密码"
+      },
+      ko: {
+        welcomePrefix: "환영합니다,",
+        defaultGuest: "고객님",
+        formatRoom: (r) => `${r}호`,
+        locale: "ko-KR",
+        tv: "TV 채널",
+        movies: "영화·VOD",
+        services: "호텔 안내",
+        roomService: "룸서비스",
+        promoHint: "OK: 전체 화면",
+        fsHint: "아무 키나 눌러 돌아가기",
+        pickerTitleTv: "TV 앱 선택",
+        pickerTitleMovies: "영화·동영상 앱 선택",
+        pickerSub: "방향키 / OK로 실행, 뒤로 가기로 닫기",
+        pickerClose: "닫기",
+        wifiPrefix: "Wi-Fi",
+        passLabel: "비밀번호"
       }
     };
 
@@ -1013,8 +1059,7 @@
 
       document.getElementById("welcomeHeading").innerHTML =
         `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
-      document.getElementById("roomSubText").textContent =
-        currentLang === "ja" ? `部屋 ${dispRoom}` : `Room ${dispRoom}`;
+      document.getElementById("roomSubText").textContent = dict.formatRoom(dispRoom);
 
       applyWifiInfo(record, state, dict);
 
@@ -1039,6 +1084,8 @@
 
       document.getElementById("langEn").classList.toggle("active-lang", currentLang === "en");
       document.getElementById("langJa").classList.toggle("active-lang", currentLang === "ja");
+      document.getElementById("langZh").classList.toggle("active-lang", currentLang === "zh");
+      document.getElementById("langKo").classList.toggle("active-lang", currentLang === "ko");
 
       const tempMain = record.temp ?? 22;
       const tempLow = record.tempLow ?? 18;
@@ -1085,7 +1132,8 @@
     function triggerAction(action) {
       if (action === "lang") {
         manualLangOverride = true;
-        currentLang = currentLang === "en" ? "ja" : "en";
+        const nextIdx = (LANG_ORDER.indexOf(currentLang) + 1) % LANG_ORDER.length;
+        currentLang = LANG_ORDER[nextIdx];
         let cachedObj = null;
         try {
           cachedObj = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
@@ -1152,7 +1200,7 @@
         e.preventDefault();
         if (e.key === "Escape" || e.keyCode === 4 || e.keyCode === 27) {
           closeTvPicker();
-        } else if (e.key === "ArrowRight" || e.keyCode === 22 || e.keyCode === 20) {
+        } else if (e.key === "ArrowRight" || e.keyCode === 22 || e.key === "ArrowDown" || e.keyCode === 20) {
           setPickerFocus(pickerFocusIdx + 1);
         } else if (e.key === "ArrowLeft" || e.keyCode === 21 || e.keyCode === 19) {
           setPickerFocus(pickerFocusIdx - 1);
