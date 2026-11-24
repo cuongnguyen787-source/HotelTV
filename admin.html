@@ -53,7 +53,7 @@
     .btn-danger { background: #fee2e2; color: #991b1b; }
     .btn-sm { height: 32px; padding: 0 10px; font-size: 13px; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .tab-btn {
       background: #e5e7eb;
       color: #374151;
@@ -81,6 +81,37 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     }
     .toolbar-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    .wifi-card {
+      background: #fff;
+      padding: 16px 18px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+    .wifi-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .wifi-card-sub {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .wifi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
 
     .table-wrap {
       background: #fff;
@@ -155,6 +186,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="roomsPanel">1. Lời Chào 50 Phòng</button>
       <button class="tab-btn" data-tab="promosPanel">2. Clip Quảng Cáo Chung (R2)</button>
+      <button class="tab-btn" data-tab="mediaWifiPanel">3. Ảnh Nền & Wi-Fi</button>
     </div>
 
     <!-- TAB 1: QUẢN LÝ 50 PHÒNG -->
@@ -218,17 +250,62 @@
         </table>
       </div>
     </div>
+
+    <!-- TAB 3: QUẢN LÝ ẢNH NỀN KHÁCH SẠN & WI-FI -->
+    <div id="mediaWifiPanel" class="panel">
+      <div class="wifi-card">
+        <div class="wifi-card-title">Thông Tin Wi-Fi Hiển Thị Dưới Số Phòng</div>
+        <div class="wifi-card-sub">Hiển thị gọn ngay dưới dòng Room 101 trên TV; để trống nếu không muốn hiện.</div>
+        <div class="wifi-grid">
+          <div>
+            <label class="field-label" for="wifiNameInput">Tên Wi-Fi (SSID)</label>
+            <input id="wifiNameInput" type="text" class="full-input" placeholder="VD: Hotel_Guest_5G" />
+          </div>
+          <div>
+            <label class="field-label" for="wifiPassInput">Mật khẩu Wi-Fi</label>
+            <input id="wifiPassInput" type="text" class="full-input" placeholder="VD: 88889999" />
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button id="addBgBtn" class="btn-primary">+ Thêm link ảnh nền</button>
+          <span style="font-size: 13px; color: #4b5563;">Dán link trực tiếp file ảnh (.jpg, .png, .webp) trên Cloudflare R2 — ảnh đầu tiên đang bật sẽ làm nền TV.</span>
+        </div>
+        <div class="toolbar-group">
+          <button id="saveSettingsBtn" class="btn-success">Lưu ảnh nền & Wi-Fi</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">STT</th>
+              <th style="width: 240px;">Tiêu đề ảnh nền</th>
+              <th>URL Ảnh Nền (Cloudflare R2)</th>
+              <th style="width: 110px;">Trạng thái</th>
+              <th style="width: 90px;">Xóa</th>
+            </tr>
+          </thead>
+          <tbody id="backgroundsBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div id="notice" class="notice"></div>
 
   <script>
-    // THAY ĐỊA CHỈ CLOUDFLARE WORKER CỦA BẠN VÀO ĐÂY
     const API_BASE = "https://hotel-tv-api.cuongnguyen787.workers.dev";
     const PIN_KEY = "hotel_admin_pin_v1";
+    const LOCAL_SETTINGS_KEY = "hotel_admin_settings_v1";
 
     let roomsData = [];
     let promosData = [];
+    let backgroundsData = [];
+    let wifiSettings = { wifiName: "", wifiPass: "" };
 
     function notify(msg) {
       const el = document.getElementById("notice");
@@ -270,23 +347,76 @@
         .replace(/>/g, "&gt;");
     }
 
+    function saveLocalSettings() {
+      try {
+        localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify({
+          wifiName: wifiSettings.wifiName || "",
+          wifiPass: wifiSettings.wifiPass || "",
+          backgrounds: backgroundsData
+        }));
+      } catch (_e) {}
+    }
+
+    function loadLocalSettingsFallback() {
+      try {
+        const raw = localStorage.getItem(LOCAL_SETTINGS_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        wifiSettings.wifiName = parsed.wifiName || "";
+        wifiSettings.wifiPass = parsed.wifiPass || "";
+        if (Array.isArray(parsed.backgrounds)) {
+          backgroundsData = parsed.backgrounds;
+        }
+      } catch (_e) {}
+    }
+
+    function syncWifiInputsFromState() {
+      document.getElementById("wifiNameInput").value = wifiSettings.wifiName || "";
+      document.getElementById("wifiPassInput").value = wifiSettings.wifiPass || "";
+    }
+
+    function getActiveBgUrl() {
+      const found = backgroundsData.find(b => b && b.active !== false && String(b.url || "").trim());
+      return found ? String(found.url).trim() : "";
+    }
+
     async function loadFromCloud() {
+      loadLocalSettingsFallback();
       try {
         const res = await fetch(`${API_BASE}/api/state`, { cache: "no-store" });
         const data = await res.json();
         if (data && data.ok) {
           roomsData = Array.isArray(data.rooms) && data.rooms.length ? data.rooms : createDefault50Rooms();
           promosData = Array.isArray(data.promos) ? data.promos : [];
+
+          if (Array.isArray(data.backgrounds) && data.backgrounds.length) {
+            backgroundsData = data.backgrounds;
+          } else if (data.bgImage) {
+            backgroundsData = [{ title: "Ảnh nền khách sạn", url: String(data.bgImage), active: true }];
+          }
+
+          const cloudWifiName = data.wifiName || data.wifiSsid || (data.room && (data.room.wifiName || data.room.wifiSsid));
+          const cloudWifiPass = data.wifiPass || data.wifiPassword || (data.room && (data.room.wifiPass || data.room.wifiPassword));
+          if (cloudWifiName !== undefined || cloudWifiPass !== undefined) {
+            wifiSettings.wifiName = String(cloudWifiName || "");
+            wifiSettings.wifiPass = String(cloudWifiPass || "");
+          }
+
+          saveLocalSettings();
+          syncWifiInputsFromState();
           renderRooms();
           renderPromos();
+          renderBackgrounds();
           notify("Đã tải dữ liệu mới nhất từ Cloudflare.");
           return;
         }
       } catch (e) {}
 
       if (!roomsData.length) roomsData = createDefault50Rooms();
+      syncWifiInputsFromState();
       renderRooms();
       renderPromos();
+      renderBackgrounds();
       notify("Chưa kết nối được Worker — kiểm tra lại API_BASE.");
     }
 
@@ -329,6 +459,38 @@
         notify("Đã cập nhật danh sách clip quảng cáo chung.");
       } catch (e) {
         notify("Lỗi mạng khi lưu clip.");
+      }
+    }
+
+    async function pushSettings() {
+      wifiSettings.wifiName = document.getElementById("wifiNameInput").value.trim();
+      wifiSettings.wifiPass = document.getElementById("wifiPassInput").value.trim();
+      saveLocalSettings();
+
+      const payload = {
+        wifiName: wifiSettings.wifiName,
+        wifiPass: wifiSettings.wifiPass,
+        bgImage: getActiveBgUrl(),
+        backgrounds: backgroundsData
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/settings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Pin": getPin()
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          notify(data.error || "Đã lưu cục bộ; kiểm tra route /api/settings trên Worker.");
+          return;
+        }
+        notify("Đã lưu ảnh nền & thông tin Wi-Fi lên Cloudflare.");
+      } catch (e) {
+        notify("Đã lưu cục bộ; lỗi mạng khi gửi lên Worker.");
       }
     }
 
@@ -489,7 +651,58 @@
       });
     }
 
-    // Chuyển tab
+    function renderBackgrounds() {
+      const tbody = document.getElementById("backgroundsBody");
+      tbody.innerHTML = "";
+
+      backgroundsData.forEach((b, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>#${idx + 1}</strong></td>
+          <td>
+            <input type="text" class="full-input bg-title" data-idx="${idx}"
+              value="${escapeAttr(b.title)}" placeholder="VD: Sảnh Khách Sạn" />
+          </td>
+          <td>
+            <input type="text" class="full-input bg-url" data-idx="${idx}"
+              value="${escapeAttr(b.url)}" placeholder="https://pub-xxxx.r2.dev/bg-hotel.jpg" />
+          </td>
+          <td>
+            <select class="bg-active" data-idx="${idx}">
+              <option value="1" ${b.active !== false ? "selected" : ""}>Đang bật</option>
+              <option value="0" ${b.active === false ? "selected" : ""}>Tạm tắt</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn-danger btn-sm bg-del" data-idx="${idx}">Xóa</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll(".bg-title").forEach(inp => {
+        inp.addEventListener("input", e => {
+          backgroundsData[Number(e.target.dataset.idx)].title = e.target.value;
+        });
+      });
+      tbody.querySelectorAll(".bg-url").forEach(inp => {
+        inp.addEventListener("input", e => {
+          backgroundsData[Number(e.target.dataset.idx)].url = e.target.value.trim();
+        });
+      });
+      tbody.querySelectorAll(".bg-active").forEach(sel => {
+        sel.addEventListener("change", e => {
+          backgroundsData[Number(e.target.dataset.idx)].active = e.target.value === "1";
+        });
+      });
+      tbody.querySelectorAll(".bg-del").forEach(btn => {
+        btn.addEventListener("click", e => {
+          backgroundsData.splice(Number(e.target.dataset.idx), 1);
+          renderBackgrounds();
+        });
+      });
+    }
+
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -516,6 +729,19 @@
       renderPromos();
     });
     document.getElementById("savePromosBtn").addEventListener("click", pushPromos);
+
+    document.getElementById("addBgBtn").addEventListener("click", () => {
+      backgroundsData.push({ title: "Ảnh nền khách sạn", url: "", active: true });
+      renderBackgrounds();
+    });
+    document.getElementById("wifiNameInput").addEventListener("input", e => {
+      wifiSettings.wifiName = e.target.value;
+    });
+    document.getElementById("wifiPassInput").addEventListener("input", e => {
+      wifiSettings.wifiPass = e.target.value;
+    });
+    document.getElementById("saveSettingsBtn").addEventListener("click", pushSettings);
+
     document.getElementById("reloadCloudBtn").addEventListener("click", loadFromCloud);
 
     const savedPin = localStorage.getItem(PIN_KEY);
