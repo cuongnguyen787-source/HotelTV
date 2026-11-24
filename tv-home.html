@@ -41,9 +41,9 @@
       inset: 0;
       background: linear-gradient(
         90deg,
-        rgba(16, 10, 6, 0.74) 0%,
-        rgba(16, 10, 6, 0.48) 55%,
-        rgba(16, 10, 6, 0.72) 100%
+        rgba(16, 10, 6, 0.76) 0%,
+        rgba(16, 10, 6, 0.50) 55%,
+        rgba(16, 10, 6, 0.74) 100%
       );
       pointer-events: none;
       z-index: 0;
@@ -54,11 +54,11 @@
       z-index: 1;
       width: 100%;
       height: 100%;
-      padding: 28px 42px 32px 42px;
+      padding: 24px 42px 32px 42px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 18px;
+      gap: 16px;
     }
 
     .top-bar {
@@ -69,24 +69,55 @@
     }
 
     .welcome-box {
-      max-width: 65%;
+      max-width: 66%;
+    }
+
+    .hotel-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .hotel-logo-img {
+      height: 44px;
+      max-width: 140px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: rgba(255, 244, 228, 0.1);
+      padding: 4px 8px;
+      border: 1px solid rgba(255, 235, 210, 0.2);
+      display: none;
+    }
+
+    .hotel-logo-img.visible {
+      display: block;
+    }
+
+    .hotel-brand-name {
+      font-size: clamp(16px, 1.55vw, 24px);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--focus-border);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
     }
 
     .welcome-title {
-      font-size: clamp(34px, 4.2vw, 68px);
+      font-size: clamp(32px, 3.9vw, 62px);
       font-weight: 500;
       line-height: 1.08;
       letter-spacing: -0.02em;
       color: var(--text-main);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       word-break: break-word;
       text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
     }
 
     .welcome-room {
-      font-size: clamp(20px, 1.9vw, 30px);
+      font-size: clamp(19px, 1.8vw, 28px);
       font-weight: 500;
-      color: var(--focus-border);
+      color: var(--text-main);
       letter-spacing: 0.02em;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
     }
@@ -96,10 +127,10 @@
       display: none;
       align-items: center;
       gap: 8px;
-      font-size: clamp(13px, 1.25vw, 17px);
+      font-size: clamp(13px, 1.2vw, 16px);
       color: var(--text-muted);
-      background: rgba(20, 12, 8, 0.52);
-      border: 1px solid rgba(255, 235, 210, 0.14);
+      background: rgba(20, 12, 8, 0.56);
+      border: 1px solid rgba(255, 235, 210, 0.16);
       border-radius: 8px;
       padding: 5px 11px;
       width: fit-content;
@@ -499,6 +530,10 @@
   <div class="screen">
     <div class="top-bar">
       <div class="welcome-box">
+        <div id="hotelBrandRow" class="hotel-brand-row">
+          <img id="hotelLogoImg" class="hotel-logo-img" alt="Hotel Logo" />
+          <span id="hotelBrandName" class="hotel-brand-name">HOTEL</span>
+        </div>
         <h1 id="welcomeHeading" class="welcome-title">Welcome,<br>Guest</h1>
         <div id="roomSubText" class="welcome-room">Room 101</div>
         <div id="wifiBox" class="wifi-info">
@@ -515,7 +550,7 @@
       <div class="meta-box">
         <div class="clock-line">
           <span id="rightDateText">Tuesday, November 24</span>
-          <span id="clockTime" class="time-strong">4:53 PM</span>
+          <span id="clockTime" class="time-strong">9:00 PM</span>
         </div>
 
         <div class="weather-row">
@@ -716,6 +751,7 @@
     let currentPromoIdx = 0;
     let lastPromoSignature = "";
     let lastBgUrl = "";
+    let lastLogoUrl = "";
     let isFullscreenPromo = false;
     let isTvPickerOpen = false;
     let pickerMode = "tv";
@@ -732,6 +768,8 @@
     const cancelBtn = document.getElementById("tvPickerCancelBtn");
     const wifiBox = document.getElementById("wifiBox");
     const wifiText = document.getElementById("wifiText");
+    const hotelLogoImg = document.getElementById("hotelLogoImg");
+    const hotelBrandName = document.getElementById("hotelBrandName");
     let pickerItems = [];
     let pickerFocusIdx = 0;
 
@@ -750,6 +788,31 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
+
+    function applyHotelBrand(record, state) {
+      const name = String(
+        state.hotelName || state.hotelTitle || record.hotelName || ""
+      ).trim();
+      hotelBrandName.textContent = name || "HOTEL";
+
+      const logo = String(
+        state.hotelLogo || state.logoUrl || record.hotelLogo || ""
+      ).trim();
+      if (logo !== lastLogoUrl) {
+        lastLogoUrl = logo;
+        if (logo) {
+          hotelLogoImg.src = logo;
+          hotelLogoImg.classList.add("visible");
+        } else {
+          hotelLogoImg.removeAttribute("src");
+          hotelLogoImg.classList.remove("visible");
+        }
+      }
+    }
+
+    hotelLogoImg.addEventListener("error", () => {
+      hotelLogoImg.classList.remove("visible");
+    });
 
     function applyBackgroundImage(url) {
       const cleanUrl = String(url || "").trim();
@@ -1056,6 +1119,8 @@
         record.status === "vacant" || !rawGuest
           ? dict.defaultGuest
           : rawGuest;
+
+      applyHotelBrand(record, state);
 
       document.getElementById("welcomeHeading").innerHTML =
         `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
