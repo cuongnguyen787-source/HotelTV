@@ -1122,8 +1122,14 @@
 
       applyHotelBrand(record, state);
 
-      document.getElementById("welcomeHeading").innerHTML =
-        `${escapeHtml(dict.welcomePrefix)}<br>${escapeHtml(guestDisplay)}`;
+     const formattedGuest = escapeHtml(guestDisplay)
+  .split(/\r?\n/)
+  .map(line => line.trim())
+  .filter(Boolean)
+  .join("<br>");
+
+document.getElementById("welcomeHeading").innerHTML =
+  `${escapeHtml(dict.welcomePrefix)}<br>${formattedGuest || escapeHtml(dict.defaultGuest)}`;
       document.getElementById("roomSubText").textContent = dict.formatRoom(dispRoom);
 
       applyWifiInfo(record, state, dict);
