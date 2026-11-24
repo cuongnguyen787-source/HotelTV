@@ -28,13 +28,20 @@
     .top-card h1 { font-size: 21px; }
     .top-card p { font-size: 13px; color: #6b7280; margin-top: 4px; }
     .pin-box { display: flex; align-items: center; gap: 8px; }
-    input[type="text"], input[type="password"], select {
-      height: 38px;
-      padding: 0 12px;
+    input[type="text"], input[type="password"], select, textarea {
+      padding: 8px 12px;
       border: 1px solid #d1d5db;
       border-radius: 8px;
       font-size: 14px;
       background: #fff;
+      font-family: inherit;
+    }
+    input[type="text"], input[type="password"], select { height: 38px; padding: 0 12px; }
+    textarea.guest-textarea {
+      width: 100%;
+      min-height: 56px;
+      line-height: 1.35;
+      resize: vertical;
     }
     button {
       height: 38px;
@@ -213,7 +220,7 @@
             <tr>
               <th style="width: 100px;">Phòng</th>
               <th style="width: 115px;">Trạng thái</th>
-              <th>Tên khách hiển thị (VD: Mr. Yamada)</th>
+              <th>Tên khách hiển thị (Enter để xuống dòng cho khách thứ 2)</th>
               <th style="width: 125px;">Ngôn ngữ</th>
               <th style="width: 215px;">Thao tác</th>
             </tr>
@@ -558,8 +565,8 @@
             </span>
           </td>
           <td>
-            <input type="text" class="full-input guest-input" data-room="${item.room}"
-              value="${escapeAttr(item.guestName)}" placeholder="Nhập tên khách (VD: Mr. Yamada)..." />
+            <textarea rows="2" class="guest-textarea guest-input" data-room="${item.room}"
+              placeholder="Khách 1&#10;Khách 2">${escapeAttr(item.guestName)}</textarea>
           </td>
           <td>
             <select class="lang-select" data-room="${item.room}">
@@ -586,12 +593,6 @@
           if (target) {
             target.guestName = e.target.value;
             target.status = e.target.value.trim() ? "occupied" : "vacant";
-          }
-        });
-        inp.addEventListener("keydown", e => {
-          if (e.key === "Enter") {
-            renderRooms();
-            pushRooms(`Đã cập nhật phòng ${e.target.dataset.room}.`);
           }
         });
       });
