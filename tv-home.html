@@ -556,6 +556,12 @@
       { pkg: "com.apptv.tvplus", name: "TVplus", icon: "" }
     ];
 
+    const DEFAULT_MOVIE_APPS = [
+      { pkg: "com.google.android.youtube.tv", name: "YouTube", icon: "" },
+      { pkg: "com.iqiyi.i18n.tv", name: "iQIYI", icon: "" },
+      { pkg: "com.sports.tv", name: "SportsTV", icon: "" }
+    ];
+
     const I18N = {
       en: {
         welcomePrefix: "Welcome,",
@@ -568,7 +574,8 @@
         roomService: "ROOM SERVICE",
         promoHint: "OK: Fullscreen",
         fsHint: "Press any key to exit",
-        pickerTitle: "Select TV App",
+        pickerTitleTv: "Select TV App",
+        pickerTitleMovies: "Select Movie & Video App",
         pickerSub: "Use D-pad / OK to launch, Back to return",
         pickerClose: "Close"
       },
@@ -583,7 +590,8 @@
         roomService: "ルームサービス",
         promoHint: "OK: 全画面表示",
         fsHint: "いずれかのキーで戻る",
-        pickerTitle: "テレビアプリを選択",
+        pickerTitleTv: "テレビアプリを選択",
+        pickerTitleMovies: "映画・動画アプリを選択",
         pickerSub: "方向キー / OKで起動、戻るキーで終了",
         pickerClose: "閉じる"
       }
@@ -596,6 +604,8 @@
     let lastPromoSignature = "";
     let isFullscreenPromo = false;
     let isTvPickerOpen = false;
+    let pickerMode = "tv"; // "tv" | "movies"
+    let returnFocusIndex = 1;
 
     const miniVideo = document.getElementById("miniPromoVideo");
     const fullVideo = document.getElementById("fullPromoVideo");
@@ -623,7 +633,20 @@
         .replace(/"/g, "&quot;");
     }
 
-    function getTvAppsList() {
+    function getAppsForMode(mode) {
+      if (mode === "movies") {
+        let apps = DEFAULT_MOVIE_APPS;
+        if (window.AndroidBridge && typeof window.AndroidBridge.getMovieAppsJson === "function") {
+          try {
+            const parsed = JSON.parse(window.AndroidBridge.getMovieAppsJson());
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              apps = parsed;
+            }
+          } catch (_e) {}
+        }
+        return apps;
+      }
+
       let apps = DEFAULT_TV_APPS;
       if (window.AndroidBridge && typeof window.AndroidBridge.getTvAppsJson === "function") {
         try {
@@ -636,8 +659,16 @@
       return apps;
     }
 
-    function renderTvAppCards() {
-      const apps = getTvAppsList();
+    function updatePickerTexts() {
+      const dict = I18N[currentLang] || I18N.en;
+      document.getElementById("tvPickerTitle").textContent =
+        pickerMode === "movies" ? dict.pickerTitleMovies : dict.pickerTitleTv;
+      document.getElementById("tvPickerSub").textContent = dict.pickerSub;
+      cancelBtn.textContent = dict.pickerClose;
+    }
+
+    function renderAppCards(mode) {
+      const apps = getAppsForMode(mode);
       tvPickerGrid.innerHTML = apps.map((app) => {
         const hasIcon = app.icon && String(app.icon).startsWith("data:image/");
         const logoHtml = hasIcon
@@ -663,7 +694,7 @@
           if (el.dataset.cancel === "1") {
             closeTvPicker();
           } else {
-            launchTvPackage(el.dataset.pkg, el.dataset.name);
+            launchSelectedPackage(el.dataset.pkg, el.dataset.name);
           }
         };
       });
@@ -678,11 +709,22 @@
       pickerItems[pickerFocusIdx].focus({ preventScroll: true });
     }
 
-    function openTvPicker() {
-      renderTvAppCards();
+    function openAppPicker(mode, focusBackIdx) {
+      pickerMode = mode === "movies" ? "movies" : "tv";
+      returnFocusIndex = typeof focusBackIdx === "number" ? focusBackIdx : 1;
+      updatePickerTexts();
+      renderAppCards(pickerMode);
       isTvPickerOpen = true;
       tvPickerModal.classList.add("active");
       setPickerFocus(0);
+    }
+
+    function openTvPicker() {
+      openAppPicker("tv", 1);
+    }
+
+    function openMoviePicker() {
+      openAppPicker("movies", 2);
     }
 
     function closeTvPicker() {
@@ -690,18 +732,29 @@
       isTvPickerOpen = false;
       tvPickerModal.classList.remove("active");
       pickerItems.forEach(el => el.classList.remove("picker-focused"));
-      setFocus(1);
+      setFocus(returnFocusIndex);
     }
 
-    function launchTvPackage(pkg, name) {
+    function launchSelectedPackage(pkg, name) {
       closeTvPicker();
-      if (window.AndroidBridge && typeof window.AndroidBridge.launchTvApp === "function") {
-        window.AndroidBridge.launchTvApp(pkg, name, roomCode);
-        return;
-      }
-      if (window.AndroidBridge && typeof window.AndroidBridge.launchApp === "function") {
-        window.AndroidBridge.launchApp(pkg, name, roomCode);
-        return;
+      if (pickerMode === "movies") {
+        if (window.AndroidBridge && typeof window.AndroidBridge.launchApp === "function") {
+          window.AndroidBridge.launchApp(pkg, name, roomCode);
+          return;
+        }
+        if (window.AndroidBridge && typeof window.AndroidBridge.launchTvApp === "function") {
+          window.AndroidBridge.launchTvApp(pkg, name, roomCode);
+          return;
+        }
+      } else {
+        if (window.AndroidBridge && typeof window.AndroidBridge.launchTvApp === "function") {
+          window.AndroidBridge.launchTvApp(pkg, name, roomCode);
+          return;
+        }
+        if (window.AndroidBridge && typeof window.AndroidBridge.launchApp === "function") {
+          window.AndroidBridge.launchApp(pkg, name, roomCode);
+          return;
+        }
       }
       showToast(`[Phòng ${roomCode}] Mở ${name} (${pkg})`);
     }
@@ -836,9 +889,9 @@
       document.getElementById("lblRoomService").textContent = dict.roomService;
       document.getElementById("promoHint").textContent = dict.promoHint;
       document.getElementById("fullscreenHint").textContent = dict.fsHint;
-      document.getElementById("tvPickerTitle").textContent = dict.pickerTitle;
-      document.getElementById("tvPickerSub").textContent = dict.pickerSub;
-      cancelBtn.textContent = dict.pickerClose;
+      if (isTvPickerOpen) {
+        updatePickerTexts();
+      }
 
       document.getElementById("langEn").classList.toggle("active-lang", currentLang === "en");
       document.getElementById("langJa").classList.toggle("active-lang", currentLang === "ja");
@@ -903,6 +956,11 @@
         return;
       }
 
+      if (action === "movies") {
+        openMoviePicker();
+        return;
+      }
+
       if (action === "promo") {
         openFullscreenPromo();
         return;
@@ -914,7 +972,6 @@
       }
 
       const names = {
-        movies: "MOVIES (Mở kho phim VOD)",
         services: "HOTEL SERVICES (Tiện ích khách sạn)",
         roomservice: "ROOM SERVICE (Đặt dịch vụ phòng)"
       };
@@ -960,7 +1017,7 @@
           if (cur && cur.dataset.cancel === "1") {
             closeTvPicker();
           } else if (cur) {
-            launchTvPackage(cur.dataset.pkg, cur.dataset.name);
+            launchSelectedPackage(cur.dataset.pkg, cur.dataset.name);
           }
         }
         return;
